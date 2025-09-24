@@ -10,6 +10,12 @@ Um projeto base em C++ para trabalho prático da disciplina de Teoria de Grafos 
 
 -----
 
+## Integrantes do Grupo
+
+* [Kaiky França](https://github.com/GLKaiky)
+* [Ciclana da Silva](https://github.com/usuario-ciclana)
+* [Beltrano de Souza](https://github.com/usuario-beltrano)
+
 ## Pré-requisitos
 
 Antes de começar, garanta que você tenha as ferramentas necessárias para o seu sistema operacional.
