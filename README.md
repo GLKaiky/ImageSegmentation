@@ -1,6 +1,6 @@
 # Image Segmentation
 
-Um projeto base em C++ para estudos e desenvolvimento de algoritmos de segmentação de imagem. Este projeto utiliza `CMake` como sistema de build e a biblioteca `stb_image` para carregamento de imagens, garantindo uma compilação simples e sem dependências externas em múltiplos sistemas operacionais.
+Um projeto base em C++ para trabalho prático da disciplina de Teoria de Grafos e Computabilidade. Este projeto utiliza `CMake` como sistema de build e a biblioteca `stb_image` para carregamento de imagens, garantindo uma compilação simples e sem dependências externas em múltiplos sistemas operacionais.
 
 ## Tecnologias Utilizadas
 
