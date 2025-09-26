@@ -1,8 +1,8 @@
 /******************************************************************************
  * @file: Image_Processing.cpp
- * @author: Kaiky França da Silva
+ * @author: Kaiky França da Silva | Puc Minas
  * @brief: Este arquivo contém as funções responsáveis por converter
- * uma imagem digital em uma estrutura de dados de grafo. A lógica principal
+ * uma imagem digital em uma estrutura de dados de grafo não direcionado e ponderado. A lógica principal
  * trata cada pixel como um vértice e cria arestas entre pixels vizinhos.
  * @version 0.1
  * @date 2025-09-25
@@ -15,6 +15,7 @@
 #include <utility>
 #include <math.h>
 #include "utils/PixelConfiguration.h"
+#include <list>
 
 
 /*
@@ -69,10 +70,8 @@ CIELAB RGBtoLab(unsigned char R, unsigned char G, unsigned char B) {
  * @brief Cria um grafo ponderado a partir de uma imagem.
  * @param imagePath Caminho para o arquivo de imagem.
  * @param graph Grafo que será populado. As arestas serão pares <vértice_vizinho, peso>.
- * @param pixel_colors Vetor que será preenchido com as cores de cada pixel/vértice.
 */
-void create_graph(const char * imagePath, Undirected_graph<std::pair<int, int>> &graph, 
-    std::vector<PixelColor>& pixelColor) {
+void create_graph(const char * imagePath, Undirected_graph &graph) {
     
     int height, width, chanels;
     
@@ -88,6 +87,50 @@ void create_graph(const char * imagePath, Undirected_graph<std::pair<int, int>> 
     const long totalSize = height* width;
 
     graph.inicializar(totalSize);
-    pixelColor.resize(totalSize);
+
+    /*
+        * A logica principal é avançar o indice de image data +1 e +2 para pegar o R, G e B
+        * Também criar um grafo que seja 1x8 (para cada 1 vértices, serão 8 arestas conectando 
+        aos 8 pixels ao dedor do grafo)
+    */
+    
+    /*Arrays para percorrer a matriz da imagem de maneira estratégica 
+        (pulando os limites e economizando memória)*/
+    const int dx[] = {0, 1, 1, 1}; 
+    const int dy[] = {1, -1, 0, 1};
+    for(int x = 0; x < height; ++x){
+        for(int y = 0; y < width; ++y) {
+
+            PixelColor principal, pixel; /*RGB do pixel principal e vizinhos*/
+
+            unsigned long index = (x* width + y) * chanels;
+            principal.r = imageData[index];
+            principal.g = imageData[index+1];
+            principal.b = imageData[index+2];
+            CIELAB current = RGBtoLab(principal.r, principal.g, principal.b); /*Conversão para o padrão LAB*/
+
+            for(int i = 0; i < 4; i++){
+                int nextX = x + dx[i];
+                int nextY = y + dy[i];
+
+                if(nextX >= 0 && nextX < height && nextY >=0 && nextY < width){
+                    index = (nextX* width + nextY) * chanels;
+                    pixel.r = imageData[index];
+                    pixel.g = imageData[index+1];
+                    pixel.b = imageData[index+2];
+
+                    //Identificadores unicos para os vértices do grafo (posicionamento dos pixel baseado em x e y)
+                    const int current_vertex_id = (x * width) + y; 
+                    const int next_vertex_id = (nextX * width) + nextY;
+
+                    CIELAB next = RGBtoLab(pixel.r, pixel.g, pixel.b);
+                    auto weight = sqrt(pow(current.L - next.L, 2) + pow(current.a - next.a, 2) + pow(current.b-next.b, 2));
+                    graph.insert(current_vertex_id, next_vertex_id, weight);
+                }
+            }
+
+
+        }
+    }
     
 }   

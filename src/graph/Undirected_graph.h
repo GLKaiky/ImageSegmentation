@@ -2,15 +2,17 @@
 #define UNDIRECTED_GRAPH_H
 #include "Graph.h"
 
-template <typename T>
-class Undirected_graph : public Graph<T> {
+class Undirected_graph : public Graph{
     public:
         //Construtor
         Undirected_graph() { }
 
         //Lógica não direcionada
-        void insert(const T u, const T v) {
-            this->adj[u];
+        void insert(const int u, const int v, const double weight) {
+            if(u >= this->size || v >= this->size) return;
+
+            this->adj[u].push_back({v, weight});
+            this->adj[v].push_back({u, weight});
         }
 
         void inicializar(int size) {

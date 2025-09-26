@@ -2,11 +2,11 @@
 #define GRAPH_H
 #include <vector>
 #include <list>
+#include <utility>
 
-template <typename T>
 class Graph {
     protected:
-        std::vector<std::list<T>> adj;
+        std::vector<std::list<std::pair<int, double> >> adj;
         int size;
     
     public:
