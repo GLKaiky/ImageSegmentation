@@ -3,6 +3,7 @@
 #include <vector>
 #include <list>
 #include <utility>
+#include <iostream>
 
 class Graph {
     protected:

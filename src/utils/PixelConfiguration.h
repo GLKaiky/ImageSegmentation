@@ -10,4 +10,9 @@ struct CIELAB {
     double b;
 };
 
+struct ARESTA {
+    int u, v;
+    double weight;
+};
+
 #endif
