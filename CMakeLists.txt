@@ -12,10 +12,13 @@ add_executable(${PROJECT_NAME}
 )
 
 add_executable(tests
-    tests.cpp
+    src/stb/image_processing.cpp
     libs/stb/std_image_impl.cpp 
 )
 
-target_include_directories(${PROJECT_NAME} PRIVATE "libs")
-target_include_directories(tests PRIVATE "libs")
 
+target_include_directories(${PROJECT_NAME} PRIVATE "libs")
+target_include_directories(tests PRIVATE 
+                            "libs"
+                            "src"
+                        )
