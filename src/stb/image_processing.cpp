@@ -16,7 +16,7 @@
 #include <math.h>
 #include "utils/PixelConfiguration.h"
 #include <list>
-
+#include <iomanip> 
 
 /*
  * @brief Faz a conversão do padrão RGB para o padrão CIELAB (melhor percepção das cores)
@@ -136,44 +136,26 @@ void create_graph(const char * imagePath, Undirected_graph &graph) {
 }   
 
 
-
 int main() {
-    std::cout << "Iniciando teste de criação de grafo a partir de imagem..." << std::endl;
+    // 1. Cria um grafo com 5 vértices (0 a 4)
+    Undirected_graph g;
+    const char * path = "images/monaliza.jpg";
+    create_graph(path, g);
 
-    // --- IMPORTANTE: Altere para o caminho de uma imagem de teste no seu computador ---
-    const char* imagePath = "src/stb/monaliza.jpg"; 
+    std::cout << "Executando o algoritmo de Kruskal..." << std::endl;
+    std::cout << "------------------------------------" << std::endl;
 
-    // Cria o objeto do grafo
-    Undirected_graph myGraph;
+    // 3. Executa o algoritmo de Kruskal
+    std::vector<ARESTA> mst = g.Kruskal();
 
-    // Chama a função principal para popular o grafo
-    create_graph(imagePath, myGraph);
-
-    std::cout << "\n--- Verificação do Grafo ---" << std::endl;
-
-    // Para verificar, vamos pegar as dimensões da imagem novamente
-    int width, height, channels;
-    if (!stbi_info(imagePath, &width, &height, &channels)) {
-        std::cerr << "Não foi possível obter informações da imagem: " << imagePath << std::endl;
-        return 1;
+    // 4. Imprime o resultado
+    double custo_total = 0.0;
+    std::cout << "Arestas na Arvore Geradora Minima (MST):" << std::endl;
+    for (const auto& aresta : mst) {
+        std::cout << "  Aresta (" << aresta.u << ", " << aresta.v << ") com peso: " 
+                  << std::fixed << std::setprecision(1) << aresta.weight << std::endl;
+        custo_total += aresta.weight;
     }
-    
-    std::cout << "Imagem carregada com sucesso. Dimensões: " << width << "x" << height << std::endl;
 
-    // Vamos testar alguns nós para ver se eles têm vizinhos
-    // Teste 1: O pixel no canto superior esquerdo (ID = 0)
-    int pixel_id_canto = 0;
-    myGraph.printNeighbors(pixel_id_canto);
-
-    // Teste 2: Um pixel mais ao centro da imagem (ex: 10, 10)
-    // Verifique se a imagem é maior que 10x10
-    if (width > 10 && height > 10) {
-        int pixel_id_centro = 10 * width + 10;
-        std::cout << "\nVerificando um pixel central (10, 10) com ID: " << pixel_id_centro << std::endl;
-        myGraph.printNeighbors(pixel_id_centro);
-    }
-    
-    std::cout << "\nTeste concluído." << std::endl;
-    
     return 0;
 }

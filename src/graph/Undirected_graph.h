@@ -13,6 +13,7 @@
 #include "Graph.h"
 #include "utils/PixelConfiguration.h"
 #include <algorithm>
+#include "utils/UnionFind.h"
 
 
 class Undirected_graph : public Graph{
@@ -74,6 +75,29 @@ class Undirected_graph : public Graph{
         }
 
 
-        
+        std::vector<ARESTA> Kruskal() {
+            std::vector<ARESTA> sortedEdges = sort_edges();
+            std::vector<ARESTA> mst;
+            UnionFind unionFind(this->size);
+
+            for(const ARESTA& aresta : sortedEdges) {
+                if(mst.size() == this->size - 1) {
+                    return mst;
+                }
+
+                if(unionFind.find(aresta.u) != unionFind.find(aresta.v)) {
+                    unionFind.union_sets(aresta.u, aresta.v);
+
+                    mst.push_back(aresta);
+                }
+            }
+            
+            return mst;
+
+        }
+
+        int getSize() {
+            return this->size;
+        }
 };
 #endif
