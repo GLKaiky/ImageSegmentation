@@ -18,6 +18,12 @@
 
 class Undirected_graph : public Graph{
     private:
+
+
+    /*
+    * @brief Ordena as arestas do grafo de acordo com o peso para union find
+    * @param a prórpia lista de adjacência do grafo
+    */
     
         std::vector<ARESTA> sort_edges() {
             std::vector<ARESTA> all_edges;
@@ -74,6 +80,11 @@ class Undirected_graph : public Graph{
             }
         }
 
+        
+    /*
+    * @brief Faz o algoritmo de Kruskal para criar em um vector a MST do Grafo, ou AGM (Arvore Geradora Minima)
+    * @param A própria lista de adjacência do grafo
+    */
 
         std::vector<ARESTA> Kruskal() {
             std::vector<ARESTA> sortedEdges = sort_edges();

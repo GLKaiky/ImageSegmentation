@@ -1,3 +1,11 @@
+/******************************************************************************
+ * @file: Graph.h
+ * @author: Kaiky França da Silva | Puc Minas
+ * @brief: O arquivo que vai ser a base do grafo para as heranças direcionadas e não direcionadas
+ * @version 0.1
+ * @date 2025-09-25
+ *****************************************************************************/
+
 #ifndef GRAPH_H
 #define GRAPH_H
 #include <vector>
