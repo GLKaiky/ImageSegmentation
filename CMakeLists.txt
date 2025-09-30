@@ -14,6 +14,8 @@ add_executable(${PROJECT_NAME}
 add_executable(tests
     src/stb/image_processing.cpp
     libs/stb/std_image_impl.cpp 
+    libs/stb/stb_image_write_impl.cpp
+
 )
 
 

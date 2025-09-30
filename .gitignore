@@ -43,3 +43,7 @@ build
 *.dwo
 
 .vscode
+
+/images/templates/*
+
+venv

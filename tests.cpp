@@ -22,7 +22,7 @@ int main() {
     unsigned char *dados = stbi_load(caminho_imagem, &largura, &altura, &canais, 0);
 
     // --- 2. VERIFICAÇÃO DE ERROS ---
-
+    
     // É CRUCIAL verificar se o ponteiro 'dados' é nulo.
     // Se for, significa que a imagem não foi encontrada ou está corrompida.
     if (dados == nullptr) {

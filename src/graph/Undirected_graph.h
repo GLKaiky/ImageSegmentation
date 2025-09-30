@@ -19,6 +19,8 @@
 class Undirected_graph : public Graph{
     private:
 
+        int width;
+        int height;
 
     /*
     * @brief Ordena as arestas do grafo de acordo com o peso para union find
@@ -49,7 +51,10 @@ class Undirected_graph : public Graph{
 
     public:
         //Construtor
-        Undirected_graph() { }
+        Undirected_graph() { 
+            this->width = 0;
+            this->height = 0;
+        }
 
         //Lógica não direcionada
         void insert(const int u, const int v, const double weight) {
@@ -90,8 +95,9 @@ class Undirected_graph : public Graph{
             std::vector<ARESTA> sortedEdges = sort_edges();
             std::vector<ARESTA> mst;
             UnionFind unionFind(this->size);
-
+            int cont = 0;
             for(const ARESTA& aresta : sortedEdges) {
+                
                 if(mst.size() == this->size - 1) {
                     return mst;
                 }
@@ -107,8 +113,36 @@ class Undirected_graph : public Graph{
 
         }
 
+
+        UnionFind findComponents(std::vector<ARESTA> &mst) {
+
+            UnionFind uf(this->size);
+
+            for(const ARESTA& aresta: mst) {
+                uf.union_sets(aresta.u, aresta.v);
+            }
+
+            return uf;
+        }
+
+        void setWidth(int w) {
+            this->width = w;
+        }
+
+        void setHeight(int h) {
+            this->height = h;
+        } 
+
         int getSize() {
             return this->size;
+        }
+
+        int getWidth() {
+            return this->width;
+        }
+
+        int getHeight() {
+            return this->height;
         }
 };
 #endif

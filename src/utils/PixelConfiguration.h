@@ -18,6 +18,7 @@ struct CIELAB {
     double L;
     double a;
     double b;
+    int x, y;
 };
 
 struct ARESTA {

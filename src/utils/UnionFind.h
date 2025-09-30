@@ -49,14 +49,12 @@ class UnionFind {
         int root_u = find(u);
         int root_v = find(v);
 
-        if(root_u != root_v) {
-            if(size[root_u] < size[root_v]) {
-                parent[root_u] = root_v;
-                size[root_v] += size[root_u]; //anexar a menor raiz da MST à maior
-            } else {
-                parent[root_v] = root_u;
-                size[root_u] += size[root_v];
+        if (root_u != root_v) {
+            if (size[root_u] < size[root_v]) {
+                std::swap(root_u, root_v);
             }
+            parent[root_v] = root_u;
+            size[root_u] += size[root_v];
         }
     }
 
@@ -71,6 +69,13 @@ class UnionFind {
             return i;
         
         return this->parent[i] = find(this->parent[i]);
+    }
+
+    int find(int i) const { // A palavra 'const' aqui é a chave!
+        while (parent[i] != i) {
+            i = parent[i];
+        }
+        return i;
     }
 
 };

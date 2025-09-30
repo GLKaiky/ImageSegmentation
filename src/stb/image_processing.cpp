@@ -9,14 +9,18 @@
  *****************************************************************************/
 
 #include "stb/stb_image.h"
+#include "stb/stb_image_write.h"
 #include "graph/Undirected_graph.h"
+#include "utils/UnionFind.h"
 #include <iostream>
 #include <vector>
 #include <utility>
 #include <math.h>
 #include "utils/PixelConfiguration.h"
 #include <list>
-#include <iomanip> 
+#include <iomanip>  
+#include <algorithm>
+#include <map>
 
 /*
  * @brief Faz a conversão do padrão RGB para o padrão CIELAB (melhor percepção das cores)
@@ -63,7 +67,69 @@ CIELAB RGBtoLab(unsigned char R, unsigned char G, unsigned char B) {
     double a = 500* (x_linear - y_linear);
     double b = 200* (y_linear - z_linear);
 
-    return {L, a, b};
+    return {L, a, b, 0, 0};
+}
+
+/**
+ * @brief Calcula a cor média de cada segmento, cria uma nova imagem e a salva em disco.
+ * @param output_filename O nome do arquivo de saída (ex: "resultado.png").
+ * @param width A largura da imagem.
+ * @param height A altura da imagem.
+ * @param segmentos A estrutura UnionFind finalizada, que mapeia cada pixel a um ID de segmento.
+ * @param original_imageData O ponteiro para os dados da imagem original, usado para calcular a cor média.
+ */
+void write_segmented_image(const char* output_filename, int width, int height, 
+                           UnionFind& segmentos, const unsigned char* original_imageData) {
+    
+    int num_pixels = width * height;
+
+    // ETAPA 1: Calcular a cor média de cada segmento.
+    
+    // 1.1: Passo de Acumulação - Soma as cores e conta os pixels de cada segmento.
+    std::map<int, std::tuple<unsigned long long, unsigned long long, unsigned long long>> color_sums;
+    std::map<int, int> pixel_counts;
+
+    for (int i = 0; i < num_pixels; ++i) {
+        int segment_id = segmentos.find(i);
+        pixel_counts[segment_id]++;
+        
+        // Pega a cor do pixel na imagem ORIGINAL
+        unsigned char r = original_imageData[i * 3 + 0];
+        unsigned char g = original_imageData[i * 3 + 1];
+        unsigned char b = original_imageData[i * 3 + 2];
+
+        // Acumula os valores de cor para o respectivo segmento
+        std::get<0>(color_sums[segment_id]) += r;
+        std::get<1>(color_sums[segment_id]) += g;
+        std::get<2>(color_sums[segment_id]) += b;
+    }
+
+    // 1.2: Passo de Média - Calcula a cor final de cada segmento.
+    std::map<int, PixelColor> segment_colors;
+    for (auto const& [id, count] : pixel_counts) {
+        segment_colors[id].r = std::get<0>(color_sums[id]) / count;
+        segment_colors[id].g = std::get<1>(color_sums[id]) / count;
+        segment_colors[id].b = std::get<2>(color_sums[id]) / count;
+    }
+
+    // ETAPA 2: Criar o buffer da nova imagem e preenchê-lo com as cores dos segmentos.
+    unsigned char* output_data = new unsigned char[num_pixels * 3];
+
+    for (int i = 0; i < num_pixels; ++i) {
+        int segment_id = segmentos.find(i);
+        PixelColor final_color = segment_colors[segment_id];
+
+        output_data[i * 3 + 0] = final_color.r;
+        output_data[i * 3 + 1] = final_color.g;
+        output_data[i * 3 + 2] = final_color.b;
+    }
+
+    // ETAPA 3: Salvar a imagem final em disco.
+    // stbi_write_png(nome_arquivo, largura, altura, canais, dados, largura_em_bytes_por_linha)
+    stbi_write_png(output_filename, width, height, 3, output_data, width * 3);
+    
+    // ETAPA 4: Limpeza da memória alocada para o buffer de saída.
+    delete[] output_data;
 }
 
 /*
@@ -71,91 +137,140 @@ CIELAB RGBtoLab(unsigned char R, unsigned char G, unsigned char B) {
  * @param imagePath Caminho para o arquivo de imagem.
  * @param graph Grafo que será populado. As arestas serão pares <vértice_vizinho, peso>.
 */
-void create_graph(const char * imagePath, Undirected_graph &graph) {
+unsigned char* create_graph(const char * imagePath, Undirected_graph &graph) {
     
-    int height, width, chanels;
+    int height, width, original_channels;
     
-    /* capta o array de pixels da imagem, tamanho, largura e a quantidade de canais
-        por hora serão forçado produzir apenas 3 canais
-    */
-    unsigned char * imageData = stbi_load(imagePath, &height, &width, &chanels, 3); 
+    // Força o carregamento com 3 canais (RGB)
+    unsigned char * imageData = stbi_load(imagePath, &width, &height, &original_channels, 3); 
+
     if(imageData == nullptr) {
-        std::cerr << "Imagem vazia ou inválida " << imagePath << std::endl;
-        return;
+        std::cerr << "Imagem vazia ou invalida " << imagePath << std::endl;
+        return nullptr;
     }
 
-    const long totalSize = height* width;
+    graph.setWidth(width);
+    graph.setHeight(height);
 
+    const long totalSize = height* width;
     graph.inicializar(totalSize);
 
-    /*
-        * A logica principal é avançar o indice de image data +1 e +2 para pegar o R, G e B
-        * Também criar um grafo que seja 1x8 (para cada 1 vértices, serão 8 arestas conectando 
-        aos 8 pixels ao dedor do grafo)
-    */
-    
-    /*Arrays para percorrer a matriz da imagem de maneira estratégica 
-        (pulando os limites e economizando memória)*/
-    const int dx[] = {0, 1, 1, 1}; 
-    const int dy[] = {1, -1, 0, 1};
-    for(int x = 0; x < height; ++x){
-        for(int y = 0; y < width; ++y) {
 
-            PixelColor principal, pixel; /*RGB do pixel principal e vizinhos*/
+    //Verificar todos os 8 pixels em volta da imagem
 
-            unsigned long index = (x* width + y) * chanels;
-            principal.r = imageData[index];
-            principal.g = imageData[index+1];
-            principal.b = imageData[index+2];
-            CIELAB current = RGBtoLab(principal.r, principal.g, principal.b); /*Conversão para o padrão LAB*/
+    const int dx[] = {-1, -1, -1,  0, 0,  1, 1, 1};
+    const int dy[] = {-1,  0,  1, -1, 1, -1, 0, 1};
+ 
+    const int channels_in_memory = 3; //limites de canais da imagem (temporário)
 
-            for(int i = 0; i < 4; i++){
+    for (int y = 0; y < height; ++y) {
+        for (int x = 0; x < width; ++x) {
+            unsigned long index = (y * width + x) * channels_in_memory;
+            CIELAB current = RGBtoLab(imageData[index], imageData[index + 1], imageData[index + 2]);
+
+            current.x = x;
+            current.y = y;
+
+            for (int i = 0; i < 8; i++) {
                 int nextX = x + dx[i];
                 int nextY = y + dy[i];
 
-                if(nextX >= 0 && nextX < height && nextY >=0 && nextY < width){
-                    index = (nextX* width + nextY) * chanels;
-                    pixel.r = imageData[index];
-                    pixel.g = imageData[index+1];
-                    pixel.b = imageData[index+2];
+                if (nextX >= 0 && nextX < width && nextY >= 0 && nextY < height) {
+                    unsigned long next_index = (nextY * width + nextX) * channels_in_memory;
+                    CIELAB next = RGBtoLab(imageData[next_index], imageData[next_index + 1], imageData[next_index + 2]);
 
-                    //Identificadores unicos para os vértices do grafo (posicionamento dos pixel baseado em x e y)
-                    const int current_vertex_id = (x * width) + y; 
-                    const int next_vertex_id = (nextX * width) + nextY;
+                    next.x = nextX;
+                    next.y = nextY;
 
-                    CIELAB next = RGBtoLab(pixel.r, pixel.g, pixel.b);
-                    auto weight = sqrt(pow(current.L - next.L, 2) + pow(current.a - next.a, 2) + pow(current.b-next.b, 2));
+                    const int current_vertex_id = y * width + x;
+                    const int next_vertex_id = nextY * width + nextX;
+
+                    const double S = 5.0; //Posição absoluta dos pixels (>20 cor importa mais, <20 posição e mais importante)
+
+                    //Calculo da distância de cores entre os pixels
+                    double color_dist_sq = std::pow(current.L - next.L, 2) + std::pow(current.a - next.a, 2) + std::pow(current.b - next.b, 2); 
+
+                    //Calculo da Distância fisica dos pixels
+                    double spatial_dist_sq = std::pow(current.x - next.x, 2) + std::pow(current.y - next.y, 2);
+
+
+                    /*
+                        O 'custo' para conectar dois pixels é a diferença de cor deles, mais a diferença de posição, 
+                        só que a importância da posição é drasticamente reduzida pelo fator S:
+                    auto weight = color_dist_sq + (spatial_dist_sq / (S*S));
+
+                        auto weight = color_dist_sq + (spatial_dist_sq / (S*S));
+                    */
+
+                    auto weight = color_dist_sq + (spatial_dist_sq / (S*S));
+                    
+                    
                     graph.insert(current_vertex_id, next_vertex_id, weight);
                 }
             }
-
-
         }
     }
-    
-}   
+    return imageData;
+}
 
+// Encontrar os componentes conexos da imagem para colorir
+UnionFind findComponents(const std::vector<ARESTA>& forest, int total_pixels) {
+    UnionFind uf(total_pixels);
+    for (const ARESTA& aresta : forest) {
+        uf.union_sets(aresta.u, aresta.v);
+    }
+    return uf;
+}
+
+void segmentate(std::vector<ARESTA> &mst, int desired_segments) {
+    if (mst.empty() || desired_segments <= 1) {
+        return;
+    }
+
+    // PASSO 1: Ordene a MST do MAIOR para o MENOR peso.
+    std::sort(mst.begin(), mst.end(), [](const ARESTA& a, const ARESTA& b) {
+        return a.weight > b.weight; // A mágica está aqui: '>' ao invés de '<'
+    });
+
+    int cuts_to_make = desired_segments - 1;
+    if (cuts_to_make < 0) cuts_to_make = 0;
+    
+    if (cuts_to_make > mst.size()) {
+        cuts_to_make = mst.size();
+    }
+    
+    for(int i = 0; i < cuts_to_make; i++){
+        mst.pop_back();
+    }
+}
 
 int main() {
-    // 1. Cria um grafo com 5 vértices (0 a 4)
     Undirected_graph g;
-    const char * path = "images/monaliza.jpg";
-    create_graph(path, g);
+    const char* path = "images/melanoma.jpg";
+    const char* output_path = "imagem.png";
+    const int K = 500; 
+
+    std::cout << "Carregando imagem e criando grafo..." << std::endl;
+    unsigned char* original_imageData = create_graph(path, g);
+
+    if (original_imageData == nullptr) {
+        return 1;
+    }
 
     std::cout << "Executando o algoritmo de Kruskal..." << std::endl;
-    std::cout << "------------------------------------" << std::endl;
-
-    // 3. Executa o algoritmo de Kruskal
     std::vector<ARESTA> mst = g.Kruskal();
 
-    // 4. Imprime o resultado
-    double custo_total = 0.0;
-    std::cout << "Arestas na Arvore Geradora Minima (MST):" << std::endl;
-    for (const auto& aresta : mst) {
-        std::cout << "  Aresta (" << aresta.u << ", " << aresta.v << ") com peso: " 
-                  << std::fixed << std::setprecision(1) << aresta.weight << std::endl;
-        custo_total += aresta.weight;
-    }
+    std::cout << "Segmentando a MST em " << K << " componentes..." << std::endl;
+    segmentate(mst, K);
+
+    UnionFind segmentos = findComponents(mst, g.getWidth() * g.getHeight());
+    
+    std::cout << "Escrevendo imagem segmentada..." << std::endl;
+    write_segmented_image(output_path, g.getWidth(), g.getHeight(), segmentos, original_imageData);
+    
+    std::cout << "Processo concluido! Imagem salva em: " << output_path << std::endl;
+
+    stbi_image_free(original_imageData);
 
     return 0;
 }
