@@ -12,6 +12,7 @@
 #define UNDIRECTED_GRAPH_H
 #include "Graph.h"
 #include "utils/PixelConfiguration.h"
+#include "utils/FH.h"
 #include <algorithm>
 #include "utils/UnionFind.h"
 
@@ -111,6 +112,16 @@ class Undirected_graph : public Graph{
             
             return mst;
 
+        }
+
+        FH MST_Forest(int k) {
+            std::vector<ARESTA> sortedEdges = sort_edges();
+            FH segmentador(k, this->size);
+
+            for(const auto& aresta: sortedEdges) {
+                segmentador.FelzenszwalbNHuttenlocher(aresta);
+            }
+            return segmentador;
         }
 
 

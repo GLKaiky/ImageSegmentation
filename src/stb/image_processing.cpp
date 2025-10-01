@@ -21,6 +21,8 @@
 #include <iomanip>  
 #include <algorithm>
 #include <map>
+#include "utils/FH.h"
+#include <cstring>
 
 /*
  * @brief Faz a conversão do padrão RGB para o padrão CIELAB (melhor percepção das cores)
@@ -185,13 +187,13 @@ unsigned char* create_graph(const char * imagePath, Undirected_graph &graph) {
                     const int current_vertex_id = y * width + x;
                     const int next_vertex_id = nextY * width + nextX;
 
-                    const double S = 5.0; //Posição absoluta dos pixels (>20 cor importa mais, <20 posição e mais importante)
+                    //const double S = 150.0; //Posição absoluta dos pixels (>20 cor importa mais, <20 posição e mais importante)
 
                     //Calculo da distância de cores entre os pixels
                     double color_dist_sq = std::pow(current.L - next.L, 2) + std::pow(current.a - next.a, 2) + std::pow(current.b - next.b, 2); 
 
                     //Calculo da Distância fisica dos pixels
-                    double spatial_dist_sq = std::pow(current.x - next.x, 2) + std::pow(current.y - next.y, 2);
+                    //double spatial_dist_sq = std::pow(current.x - next.x, 2) + std::pow(current.y - next.y, 2);
 
 
                     /*
@@ -202,7 +204,7 @@ unsigned char* create_graph(const char * imagePath, Undirected_graph &graph) {
                         auto weight = color_dist_sq + (spatial_dist_sq / (S*S));
                     */
 
-                    auto weight = color_dist_sq + (spatial_dist_sq / (S*S));
+                    auto weight = color_dist_sq;
                     
                     
                     graph.insert(current_vertex_id, next_vertex_id, weight);
@@ -246,9 +248,9 @@ void segmentate(std::vector<ARESTA> &mst, int desired_segments) {
 
 int main() {
     Undirected_graph g;
-    const char* path = "images/melanoma.jpg";
-    const char* output_path = "imagem.png";
-    const int K = 500; 
+    const char* path = "images/templates/melanoma.jpg";
+    const char* output_path = "images/luisS.png";
+    const int K = 800; 
 
     std::cout << "Carregando imagem e criando grafo..." << std::endl;
     unsigned char* original_imageData = create_graph(path, g);
@@ -258,19 +260,55 @@ int main() {
     }
 
     std::cout << "Executando o algoritmo de Kruskal..." << std::endl;
-    std::vector<ARESTA> mst = g.Kruskal();
+    FH segmentador = g.MST_Forest(K);
+    int width = g.getWidth();
+    int height = g.getHeight();
+    int channels = 3;
 
-    std::cout << "Segmentando a MST em " << K << " componentes..." << std::endl;
-    segmentate(mst, K);
 
-    UnionFind segmentos = findComponents(mst, g.getWidth() * g.getHeight());
-    
-    std::cout << "Escrevendo imagem segmentada..." << std::endl;
-    write_segmented_image(output_path, g.getWidth(), g.getHeight(), segmentos, original_imageData);
-    
-    std::cout << "Processo concluido! Imagem salva em: " << output_path << std::endl;
+    size_t buffer_size = width * height * channels;
+    unsigned char *output_data = new unsigned char[buffer_size];
+    std::memcpy(output_data, original_imageData, buffer_size); // Copia a imagem original para o buffer de saída
 
-    stbi_image_free(original_imageData);
+    // Define a cor da borda (amarelo brilhante: R=255, G=255, B=0)
+    unsigned char border_color[3] = {255, 255, 0}; 
 
-    return 0;
+    // Percorre a imagem para encontrar e pintar as bordas
+    for (int y = 0; y < height - 1; ++y) { // -1 para evitar sair dos limites da imagem
+        for (int x = 0; x < width - 1; ++x) { // -1 para evitar sair dos limites da imagem
+            
+            int current_pixel_idx = y * width + x;
+            int raiz_atual = segmentador.find(current_pixel_idx);
+
+            // Compara com o vizinho da DIREITA
+            int right_pixel_idx = y * width + (x + 1);
+            int raiz_direita = segmentador.find(right_pixel_idx);
+
+            // Compara com o vizinho de BAIXO
+            int down_pixel_idx = (y + 1) * width + x;
+            int raiz_baixo = segmentador.find(down_pixel_idx);
+            
+            // Se a raiz do segmento for diferente da do vizinho, é uma borda
+            if (raiz_atual != raiz_direita || raiz_atual != raiz_baixo) {
+                
+                // Pinta o pixel ATUAL no buffer de saída com a cor da borda
+                unsigned char* pixel_out = output_data + current_pixel_idx * channels;
+                for (int i = 0; i < channels; ++i) {
+                    // Se a imagem tiver um canal alfa, o mantemos, senão pintamos a cor
+                    if (i < 3) { // Garante que só pintamos R, G, B
+                    pixel_out[i] = border_color[i];
+                    }
+                }
+            }
+        }
+    }
+
+
+    // ... (o restante do seu código para salvar a imagem com stbi_write_png e liberar a memória) ...
+    const char* output_filename = "resultado_bordas2.png";
+    int stride_in_bytes = width * channels;
+    stbi_write_png(output_filename, width, height, channels, output_data, stride_in_bytes);
+
+    delete[] output_data;
+
 }
