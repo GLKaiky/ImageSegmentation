@@ -27,8 +27,64 @@
 #include <cstring>
 
 
-unsigned char* toGaussian_blur() {
+/**
+ * @brief Faz os calculos utilizando um kernel para espalhar as cores, evitar ruidos nas cores da imagem,
+ * o que melhora a segmentação
+ * @param originalData dados da imagem original
+ * @param width largura da imagem
+ * @param height altura da imagem
+ * @param channels quantos canais a imagem possui
+ */
+unsigned char* toGaussian_blur(unsigned char* originalData ,int width, int height, int channels) {
+    int kernel[3][3] {
+        {1,2,1}, 
+        {2,4,2}, 
+        {1,2,1}
+    };
+
+
+    size_t buffer_size = width * height * channels;
+
+    unsigned char* outputData = new unsigned char[buffer_size];
+
+    const int dy[] = {-1, -1, -1,  0, 0, 0,  1, 1, 1};
+    const int dx[] = {-1,  0,  1, -1, 0, 1, -1, 0, 1};
     
+    for(int y = 0; y<height; ++y) {
+        for(int x = 0; x<width; ++x) {
+            int index =((y * width) + x) * channels;
+
+            double sumR = 0.0;
+            double sumG = 0.0;
+            double sumB = 0.0;
+
+            for(int i = 0; i<9; i++){
+        
+                int nextX = x + dx[i];
+                int nextY = y + dy[i];
+
+                if (nextX >= 0 && nextX < width && nextY >= 0 && nextY < height) {
+
+                    int index_pixel = (nextY * width + nextX) * channels;
+
+                    double weight = kernel[i/3][i%3];
+        
+                    sumR += (originalData[index_pixel] * weight);
+                    sumG += (originalData[index_pixel + 1] * weight);
+                    sumB += (originalData[index_pixel + 2] * weight);
+
+                    
+                }
+            }
+
+            outputData[index] = static_cast<unsigned char>(sumR/16.0);
+            outputData[index+1] = static_cast<unsigned char>(sumG/16.0);
+            outputData[index+2] = static_cast<unsigned char>(sumB/16.0);
+
+        }
+
+    }
+    return outputData;   
 }
 
 /**
@@ -86,6 +142,7 @@ void write_segmented_image(const char* output_filename, int width, int height, i
             }
         }
     }
+    PixelColor colors;
 
 
     int stride_in_bytes = width * channels;
@@ -107,6 +164,8 @@ unsigned char* create_graph(const char * imagePath, Undirected_graph &graph) {
     
     // Força o carregamento com 3 canais (RGB)
     unsigned char * imageData = stbi_load(imagePath, &width, &height, &original_channels, 3); 
+
+    imageData = toGaussian_blur(imageData, width, height, original_channels); //faz blur na imagem, que vai melhorar a segmentação
 
     if(imageData == nullptr) {
         std::cerr << "Imagem vazia ou invalida " << imagePath << std::endl;
@@ -203,6 +262,33 @@ unsigned char* create_graph(const char * imagePath, Undirected_graph &graph) {
         mst.pop_back();
     }
 }*/
+
+
+// A função recebe o nome do arquivo, dimensões e o ponteiro para os dados
+void escreverImagem(const std::string& nomeArquivo, int width, int height, int channels, const unsigned char* data) {
+    // Verifica a extensão do arquivo para decidir o formato
+    std::string ext = nomeArquivo.substr(nomeArquivo.find_last_of(".") + 1);
+
+    int sucesso = 0;
+    if (ext == "png") {
+        // stbi_write_png(nome, largura, altura, canais, dados, largura_em_bytes_por_linha)
+        sucesso = stbi_write_png(nomeArquivo.c_str(), width, height, channels, data, width * channels);
+    } else if (ext == "jpg" || ext == "jpeg") {
+        // stbi_write_jpg(nome, largura, altura, canais, dados, qualidade)
+        sucesso = stbi_write_jpg(nomeArquivo.c_str(), width, height, channels, data, 95); // 95 é uma boa qualidade
+    } else if (ext == "bmp") {
+        sucesso = stbi_write_bmp(nomeArquivo.c_str(), width, height, channels, data);
+    } else {
+        std::cerr << "Erro: Extensao de arquivo nao suportada: " << ext << std::endl;
+        return;
+    }
+
+    if (sucesso) {
+        std::cout << "Imagem salva com sucesso em: " << nomeArquivo << std::endl;
+    } else {
+        std::cerr << "Erro: Nao foi possivel salvar a imagem." << std::endl;
+    }
+}
 
 int main() {
     Undirected_graph g;
