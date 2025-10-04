@@ -110,6 +110,8 @@ unsigned char* create_graph(const char * imagePath, Undirected_graph &graph) {
 
     imageData = toGaussian_blur(imageData, width, height, original_channels); //faz blur na imagem, que vai melhorar a segmentação
 
+    unsigned char* sobelData = sobelFilter(imageData, width, height, 3);
+
     if(imageData == nullptr) {
         std::cerr << "Imagem vazia ou invalida " << imagePath << std::endl;
         return nullptr;
@@ -122,8 +124,10 @@ unsigned char* create_graph(const char * imagePath, Undirected_graph &graph) {
     graph.inicializar(totalSize);
 
 
+ 
+    const double W = 0.3;
+    
     //Verificar todos os 8 pixels em volta da imagem
-
     const int dx[] = {-1, -1, -1,  0, 0,  1, 1, 1};
     const int dy[] = {-1,  0,  1, -1, 1, -1, 0, 1};
  
@@ -147,6 +151,11 @@ unsigned char* create_graph(const char * imagePath, Undirected_graph &graph) {
                     const int current_vertex_id = y * width + x;
                     const int next_vertex_id = nextY * width + nextX;
 
+                    unsigned char sobel_current = sobelData[current_vertex_id];
+                    unsigned char sobel_next = sobelData[next_vertex_id];
+                    
+                    double sobel_penalty = std::max(sobel_current, sobel_next);
+
                     //const double S = 150.0; //Posição absoluta dos pixels (>20 cor importa mais, <20 posição e mais importante)
 
                     //Calculo da distância de cores entre os pixels
@@ -164,7 +173,7 @@ unsigned char* create_graph(const char * imagePath, Undirected_graph &graph) {
                         auto weight = color_dist_sq + (spatial_dist_sq / (S*S));
                     */
 
-                    auto weight = color_dist_sq;
+                    auto weight = color_dist_sq + (W * sobel_penalty);
                     
                     
                     graph.insert(current_vertex_id, next_vertex_id, weight);
@@ -233,11 +242,76 @@ void escreverImagem(const std::string& nomeArquivo, int width, int height, int c
     }
 }
 
+
+void color_segments_by_average(const char* output_filename, int width, int height, int channels,
+                               FH& segmentador, unsigned char* original_imageData) {
+    
+    // --- FASE 1: Calcular a cor média de cada segmento ---
+
+    std::map<int, ColorSum> segment_stats; // Mapeia ID do segmento -> {soma das cores, contagem de pixels}
+
+    for (int y = 0; y < height; ++y) {
+        for (int x = 0; x < width; ++x) {
+            int pixel_idx_1d = y * width + x;
+            int segment_id = segmentador.find(pixel_idx_1d);
+
+            int pixel_idx_buffer = pixel_idx_1d * channels;
+            
+            // Acumula os valores de cor para o segmento correspondente
+            segment_stats[segment_id].r += original_imageData[pixel_idx_buffer];
+            segment_stats[segment_id].g += original_imageData[pixel_idx_buffer + 1];
+            segment_stats[segment_id].b += original_imageData[pixel_idx_buffer + 2];
+            segment_stats[segment_id].count++;
+        }
+    }
+
+    // Agora, calcula a média e armazena em um novo mapa
+    std::map<int, PixelColor> average_colors; // Mapeia ID do segmento -> Cor Média
+    for (auto const& [segment_id, stats] : segment_stats) {
+        if (stats.count > 0) {
+            average_colors[segment_id] = {
+                static_cast<unsigned char>(stats.r / stats.count),
+                static_cast<unsigned char>(stats.g / stats.count),
+                static_cast<unsigned char>(stats.b / stats.count)
+            };
+        }
+    }
+
+    // --- FASE 2: Criar a nova imagem colorindo cada pixel ---
+
+    size_t buffer_size = width * height * channels;
+    unsigned char* output_data = new unsigned char[buffer_size];
+
+    for (int y = 0; y < height; ++y) {
+        for (int x = 0; x < width; ++x) {
+            int pixel_idx_1d = y * width + x;
+            int segment_id = segmentador.find(pixel_idx_1d);
+
+            PixelColor avg_color = average_colors[segment_id];
+
+            int pixel_idx_buffer = pixel_idx_1d * channels;
+            output_data[pixel_idx_buffer]     = avg_color.r;
+            output_data[pixel_idx_buffer + 1] = avg_color.g;
+            output_data[pixel_idx_buffer + 2] = avg_color.b;
+            
+            // Se houver um canal alfa, o copiamos
+            if (channels == 4) {
+                 output_data[pixel_idx_buffer + 3] = original_imageData[pixel_idx_buffer + 3];
+            }
+        }
+    }
+
+    // Salva a imagem final
+    escreverImagem(output_filename, width, height, channels, output_data);
+
+    delete[] output_data;
+}
+
 int main() {
     Undirected_graph g;
-    const char* path = "images/templates/kirian4.jpg";
-    const char* output_path = "images/luisS.png";
-    const int K = 800; 
+    const char* path = "images/templates/melanoma.jpg";
+    const char* output_path = "images/cerebro.jpg";
+    const int K = 850; 
 
    std::cout << "Carregando imagem e criando grafo..." << std::endl;
     unsigned char* original_imageData = create_graph(path, g);
@@ -254,5 +328,5 @@ int main() {
 
     std::cout << "Segmentando" << std::endl;
     write_segmented_image("imagemT.png", width, height, channels, segmentador, original_imageData);
-
+    color_segments_by_average("imagemT2.png", width, height, channels, segmentador, original_imageData);
 }

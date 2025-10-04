@@ -25,4 +25,9 @@ struct ARESTA {
     double weight;
 };
 
+struct ColorSum {
+    // Usamos long long para evitar overflow com segmentos grandes
+    long long r = 0, g = 0, b = 0;
+    int count = 0;
+};
 #endif
