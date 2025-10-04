@@ -14,7 +14,7 @@
 #include "utils/UnionFind.h"
 #include "utils/PixelConfiguration.h"
 #include "utils/FH.h"
-#include "utils/Converters.h"
+#include "utils/Filters.h"
 
 #include <iostream>
 #include <vector>
@@ -27,65 +27,8 @@
 #include <cstring>
 
 
-/**
- * @brief Faz os calculos utilizando um kernel para espalhar as cores, evitar ruidos nas cores da imagem,
- * o que melhora a segmentação
- * @param originalData dados da imagem original
- * @param width largura da imagem
- * @param height altura da imagem
- * @param channels quantos canais a imagem possui
- */
-unsigned char* toGaussian_blur(unsigned char* originalData ,int width, int height, int channels) {
-    int kernel[3][3] {
-        {1,2,1}, 
-        {2,4,2}, 
-        {1,2,1}
-    };
 
 
-    size_t buffer_size = width * height * channels;
-
-    unsigned char* outputData = new unsigned char[buffer_size];
-
-    const int dy[] = {-1, -1, -1,  0, 0, 0,  1, 1, 1};
-    const int dx[] = {-1,  0,  1, -1, 0, 1, -1, 0, 1};
-    
-    for(int y = 0; y<height; ++y) {
-        for(int x = 0; x<width; ++x) {
-            int index =((y * width) + x) * channels;
-
-            double sumR = 0.0;
-            double sumG = 0.0;
-            double sumB = 0.0;
-
-            for(int i = 0; i<9; i++){
-        
-                int nextX = x + dx[i];
-                int nextY = y + dy[i];
-
-                if (nextX >= 0 && nextX < width && nextY >= 0 && nextY < height) {
-
-                    int index_pixel = (nextY * width + nextX) * channels;
-
-                    double weight = kernel[i/3][i%3];
-        
-                    sumR += (originalData[index_pixel] * weight);
-                    sumG += (originalData[index_pixel + 1] * weight);
-                    sumB += (originalData[index_pixel + 2] * weight);
-
-                    
-                }
-            }
-
-            outputData[index] = static_cast<unsigned char>(sumR/16.0);
-            outputData[index+1] = static_cast<unsigned char>(sumG/16.0);
-            outputData[index+2] = static_cast<unsigned char>(sumB/16.0);
-
-        }
-
-    }
-    return outputData;   
-}
 
 /**
  * @brief Calcula a cor média de cada segmento, cria uma nova imagem e a salva em disco.
@@ -292,11 +235,11 @@ void escreverImagem(const std::string& nomeArquivo, int width, int height, int c
 
 int main() {
     Undirected_graph g;
-    const char* path = "images/templates/monaliza.jpg";
+    const char* path = "images/templates/kirian4.jpg";
     const char* output_path = "images/luisS.png";
     const int K = 800; 
 
-    std::cout << "Carregando imagem e criando grafo..." << std::endl;
+   std::cout << "Carregando imagem e criando grafo..." << std::endl;
     unsigned char* original_imageData = create_graph(path, g);
 
     if (original_imageData == nullptr) {
