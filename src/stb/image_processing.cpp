@@ -15,6 +15,7 @@
 #include "utils/PixelConfiguration.h"
 #include "utils/FH.h"
 #include "utils/Filters.h"
+#include "ImageSegmenter.h"
 
 #include <iostream>
 #include <vector>
@@ -307,26 +308,37 @@ void color_segments_by_average(const char* output_filename, int width, int heigh
     delete[] output_data;
 }
 
-int main() {
-    Undirected_graph g;
-    const char* path = "images/templates/melanoma.jpg";
-    const char* output_path = "images/cerebro.jpg";
-    const int K = 850; 
 
-   std::cout << "Carregando imagem e criando grafo..." << std::endl;
-    unsigned char* original_imageData = create_graph(path, g);
+ImageSegmenter::ImageSegmenter() {}
+
+bool ImageSegmenter::processImage(const std::string& inputPath, 
+                                  const std::string& outputPathBorders, 
+                                  const std::string& outputPathAverage, 
+                                  int k) {
+    Undirected_graph g;
+
+    std::cout << "Carregando imagem e criando grafo..." << std::endl;
+    // Precisamos converter std::string para const char*
+    unsigned char* original_imageData = create_graph(inputPath.c_str(), g);
 
     if (original_imageData == nullptr) {
-        return 1;
+        return false; // Falha
     }
 
-    std::cout << "Executando o algoritmo de Kruskal..." << std::endl;
-    FH segmentador = g.MST_Forest(K);
+    std::cout << "Executando o algoritmo de segmentação..." << std::endl;
+    FH segmentador = g.MST_Forest(k);
+    
     int width = g.getWidth();
     int height = g.getHeight();
     int channels = 3;
 
-    std::cout << "Segmentando" << std::endl;
-    write_segmented_image("imagemT.png", width, height, channels, segmentador, original_imageData);
-    color_segments_by_average("imagemT2.png", width, height, channels, segmentador, original_imageData);
+    std::cout << "Gerando imagem com bordas..." << std::endl;
+    write_segmented_image(outputPathBorders.c_str(), width, height, channels, segmentador, original_imageData);
+    
+    std::cout << "Gerando imagem com cores médias..." << std::endl;
+    color_segments_by_average(outputPathAverage.c_str(), width, height, channels, segmentador, original_imageData);
+
+    stbi_image_free(original_imageData); 
+    
+    return true; // Sucesso
 }
