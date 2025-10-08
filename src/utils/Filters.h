@@ -1,5 +1,6 @@
 #include "PixelConfiguration.h"
 #include <math.h>
+#include <algorithm>
 
 #ifndef FILTERS_H
 #define FILTERS_H
@@ -60,26 +61,84 @@ CIELAB RGBtoLab(unsigned char R, unsigned char G, unsigned char B) {
  */
 
 unsigned char* toGray(unsigned char* imageData, int width, int height, int channels) {
-    size_t bufferSize = width * height * channels;
-    PixelColor pixel;
-    unsigned char * outputData  = new unsigned char[bufferSize];
+    size_t bufferSize = width * height;
+    unsigned char* outputData = new unsigned char[bufferSize];
 
-    for(int y = 0; y< height; ++y){
-        for(int x = 0; x < width; ++x){
-            int index = ((y * width) + x) * channels;
-
-            pixel.r = imageData[index];
-            pixel.g = imageData[index+1];
-            pixel.b = imageData[index+2];
-
-
-            double grayScale = (0.299 * pixel.r) + (0.587 * pixel.g) + (0.114 * pixel.b);
-            outputData[index] = static_cast<unsigned char>(grayScale);
-            outputData[index+1] = static_cast<unsigned char>(grayScale);
-            outputData[index+2] = static_cast<unsigned char>(grayScale);
+    for (int y = 0; y < height; ++y) {
+        for (int x = 0; x < width; ++x) {
+            int input_index = (y * width + x) * channels;
             
+            int output_index = y * width + x;
+
+            unsigned char r = imageData[input_index];
+            unsigned char g = imageData[input_index + 1];
+            unsigned char b = imageData[input_index + 2];
+
+            double grayScale = (0.299 * r) + (0.587 * g) + (0.114 * b);
+
+            outputData[output_index] = static_cast<unsigned char>(grayScale);
         }
     }
+    return outputData;
+}
+
+unsigned char* sobelFilter(unsigned char* originalData, int width, int height, int channels) {
+    size_t bufferSize = width * height;
+    PixelColor pixel;
+    int gx_Kernel[3][3] = {{-1, 0, 1}, 
+                           {-2, 0, 2}, 
+                           {-1, 0, 1}};
+
+    int gy_Kernel[3][3] = {{-1, -2, -1}, 
+                            {0, 0, 0}, 
+                            {1, 2, 1}};
+
+    double* Magnetude_Map = new double[bufferSize];
+    unsigned char* outputData = new unsigned char[bufferSize];
+
+    unsigned char* grayScaleData = toGray(originalData, width, height, channels);
+
+    const int dy[] = {-1, -1, -1,  0, 0, 0,  1, 1, 1};
+    const int dx[] = {-1,  0,  1, -1, 0, 1, -1, 0, 1};
+
+    for(int y = 0; y<height; ++y) {
+        for(int x = 0; x<width; ++x) {
+            
+            double sumX = 0.0, sumY = 0.0;
+            int index = (y * width) + x;
+
+            for(int i = 0; i<9; i++){
+        
+                int nextX = x + dx[i];
+                int nextY = y + dy[i];
+
+                if (nextX >= 0 && nextX < width && nextY >= 0 && nextY < height) {
+
+                    int index_pixel = (nextY * width + nextX);
+
+                    sumX += grayScaleData[index_pixel] * gx_Kernel[i/3][i%3];
+                    sumY += grayScaleData[index_pixel] * gy_Kernel[i/3][i%3];
+
+                }       
+            }
+
+            Magnetude_Map[index] = sqrt((sumX * sumX) + (sumY * sumY));
+        }
+    }
+
+    double* PmaxValue = std::max_element(Magnetude_Map, Magnetude_Map + bufferSize);
+    double maxValue = *PmaxValue;
+
+    for(int i = 0; i < bufferSize; ++i) { 
+        if (maxValue > 0) { 
+            outputData[i] = static_cast<unsigned char>((Magnetude_Map[i] / maxValue) * 255.0);
+        } else {
+            outputData[i] = 0;
+        }
+    }
+    delete[] Magnetude_Map;
+    delete[] grayScaleData;
+    
     return outputData;
 }
 
