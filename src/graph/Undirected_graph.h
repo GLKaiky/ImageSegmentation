@@ -23,32 +23,7 @@ class Undirected_graph : public Graph{
         int width;
         int height;
 
-    /*
-    * @brief Ordena as arestas do grafo de acordo com o peso para union find
-    * @param a prórpia lista de adjacência do grafo
-    */
-    
-        std::vector<ARESTA> sort_edges() {
-            std::vector<ARESTA> all_edges;
-        
-            for (int u = 0; u < this->size; ++u) {
-                for (const auto& edge_pair : this->adj[u]) {
-                    int v = edge_pair.first;
-                    double weight = edge_pair.second;
 
-                    if (u < v) {
-                        all_edges.push_back({u, v, weight});
-                    }
-                }
-            }
-
-            std::sort(all_edges.begin(), all_edges.end(), [](const ARESTA& a, const ARESTA& b) {
-                return a.weight < b.weight;
-            });
-
-            // Retornar o vetor ordenado
-            return all_edges;
-        }
 
     public:
         //Construtor
@@ -86,6 +61,33 @@ class Undirected_graph : public Graph{
             }
         }
 
+    /**
+    * @brief Ordena as arestas do grafo de acordo com o peso para union find
+    * @param a prórpia lista de adjacência do grafo
+    */
+    
+        std::vector<ARESTA> sort_edges() {
+            std::vector<ARESTA> all_edges;
+        
+            for (int u = 0; u < this->size; ++u) {
+                for (const auto& edge_pair : this->adj[u]) {
+                    int v = edge_pair.first;
+                    double weight = edge_pair.second;
+
+                    if (u < v) {
+                        all_edges.push_back({u, v, weight});
+                    }
+                }
+            }
+
+            std::sort(all_edges.begin(), all_edges.end(), [](const ARESTA& a, const ARESTA& b) {
+                return a.weight < b.weight;
+            });
+
+            // Retornar o vetor ordenado
+            return all_edges;
+        }
+
         
     /*
     * @brief Faz o algoritmo de Kruskal para criar em um vector a MST do Grafo, ou AGM (Arvore Geradora Minima)
@@ -114,8 +116,8 @@ class Undirected_graph : public Graph{
 
         }
 
-        FH MST_Forest(int k) {
-            std::vector<ARESTA> sortedEdges = sort_edges();
+        FH MST_Forest(int k, const std::vector<ARESTA>& sortedEdges) {
+            
             FH segmentador(k, this->size);
 
             for(const auto& aresta: sortedEdges) {

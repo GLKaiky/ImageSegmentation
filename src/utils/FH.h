@@ -67,6 +67,32 @@ class FH {
     int getParent(int i) {
         return this->parent[i];
     }
+
+
+    void mergeSmallSegments(const std::vector<ARESTA>& edges, int min_segment_size) {
+    // Itera sobre as arestas novamente para encontrar vizinhos
+    for (const auto& edge : edges) {
+        int root_u = find(edge.u);
+        int root_v = find(edge.v);
+
+        if (root_u != root_v) {
+            if (component_size[root_u] < min_segment_size || component_size[root_v] < min_segment_size) {
+                
+                int new_parent, child;
+                    if (component_size[root_u] < component_size[root_v]) {
+                    new_parent = root_v;
+                    child = root_u;
+                } else {
+                    new_parent = root_u;
+                    child = root_v;
+                }
+                
+                parent[child] = new_parent;
+                component_size[new_parent] += component_size[child];
+                }
+            }
+        }
+    }   
 };
 
 #endif

@@ -96,6 +96,34 @@ void write_segmented_image(const char* output_filename, int width, int height, i
 
 }
 
+
+// A função recebe o nome do arquivo, dimensões e o ponteiro para os dados
+void escreverImagem(const std::string& nomeArquivo, int width, int height, int channels, const unsigned char* data) {
+    // Verifica a extensão do arquivo para decidir o formato
+    std::string ext = nomeArquivo.substr(nomeArquivo.find_last_of(".") + 1);
+
+    int sucesso = 0;
+    if (ext == "png") {
+        // stbi_write_png(nome, largura, altura, canais, dados, largura_em_bytes_por_linha)
+        sucesso = stbi_write_png(nomeArquivo.c_str(), width, height, channels, data, width * channels);
+    } else if (ext == "jpg" || ext == "jpeg") {
+        // stbi_write_jpg(nome, largura, altura, canais, dados, qualidade)
+        sucesso = stbi_write_jpg(nomeArquivo.c_str(), width, height, channels, data, 95); // 95 é uma boa qualidade
+    } else if (ext == "bmp") {
+        sucesso = stbi_write_bmp(nomeArquivo.c_str(), width, height, channels, data);
+    } else {
+        std::cerr << "Erro: Extensao de arquivo nao suportada: " << ext << std::endl;
+        return;
+    }
+
+    if (sucesso) {
+        std::cout << "Imagem salva com sucesso em: " << nomeArquivo << std::endl;
+    } else {
+        std::cerr << "Erro: Nao foi possivel salvar a imagem." << std::endl;
+    }
+}
+
+
 /**
  * @brief Cria um grafo ponderado a partir de uma imagem.
  * @param imagePath Caminho para o arquivo de imagem.
@@ -110,7 +138,12 @@ unsigned char* create_graph(const char * imagePath, Undirected_graph &graph) {
 
     imageData = toGaussian_blur(imageData, width, height, original_channels); //faz blur na imagem, que vai melhorar a segmentação
 
+    escreverImagem("output/imagemGaussiana.png", width, height, 3, imageData);
+
     unsigned char* sobelData = sobelFilter(imageData, width, height, 3);
+
+    escreverImagem("output/imagemSobel.png", width, height, 1, sobelData);
+
 
     if(imageData == nullptr) {
         std::cerr << "Imagem vazia ou invalida " << imagePath << std::endl;
@@ -125,7 +158,7 @@ unsigned char* create_graph(const char * imagePath, Undirected_graph &graph) {
 
 
  
-    const double W = 0.3;
+    const double W = 150.0;
     
     //Verificar todos os 8 pixels em volta da imagem
     const int dx[] = {-1, -1, -1,  0, 0,  1, 1, 1};
@@ -216,32 +249,6 @@ unsigned char* create_graph(const char * imagePath, Undirected_graph &graph) {
 }*/
 
 
-// A função recebe o nome do arquivo, dimensões e o ponteiro para os dados
-void escreverImagem(const std::string& nomeArquivo, int width, int height, int channels, const unsigned char* data) {
-    // Verifica a extensão do arquivo para decidir o formato
-    std::string ext = nomeArquivo.substr(nomeArquivo.find_last_of(".") + 1);
-
-    int sucesso = 0;
-    if (ext == "png") {
-        // stbi_write_png(nome, largura, altura, canais, dados, largura_em_bytes_por_linha)
-        sucesso = stbi_write_png(nomeArquivo.c_str(), width, height, channels, data, width * channels);
-    } else if (ext == "jpg" || ext == "jpeg") {
-        // stbi_write_jpg(nome, largura, altura, canais, dados, qualidade)
-        sucesso = stbi_write_jpg(nomeArquivo.c_str(), width, height, channels, data, 95); // 95 é uma boa qualidade
-    } else if (ext == "bmp") {
-        sucesso = stbi_write_bmp(nomeArquivo.c_str(), width, height, channels, data);
-    } else {
-        std::cerr << "Erro: Extensao de arquivo nao suportada: " << ext << std::endl;
-        return;
-    }
-
-    if (sucesso) {
-        std::cout << "Imagem salva com sucesso em: " << nomeArquivo << std::endl;
-    } else {
-        std::cerr << "Erro: Nao foi possivel salvar a imagem." << std::endl;
-    }
-}
-
 
 void color_segments_by_average(const char* output_filename, int width, int height, int channels,
                                FH& segmentador, unsigned char* original_imageData) {
@@ -309,9 +316,10 @@ void color_segments_by_average(const char* output_filename, int width, int heigh
 
 int main() {
     Undirected_graph g;
-    const char* path = "images/templates/melanoma.jpg";
+    const char* path = "images/templates/kirian5.jpeg";
     const char* output_path = "images/cerebro.jpg";
-    const int K = 850; 
+    const int K = 200; 
+    const int MIN_SEGMENT_SIZE = 1500;
 
    std::cout << "Carregando imagem e criando grafo..." << std::endl;
     unsigned char* original_imageData = create_graph(path, g);
@@ -319,14 +327,18 @@ int main() {
     if (original_imageData == nullptr) {
         return 1;
     }
+    std::vector<ARESTA> sortedEdges = g.sort_edges();
 
     std::cout << "Executando o algoritmo de Kruskal..." << std::endl;
-    FH segmentador = g.MST_Forest(K);
+    FH segmentador = g.MST_Forest(K, sortedEdges);
+
+    segmentador.mergeSmallSegments(sortedEdges, MIN_SEGMENT_SIZE);
+
     int width = g.getWidth();
     int height = g.getHeight();
     int channels = 3;
 
     std::cout << "Segmentando" << std::endl;
-    write_segmented_image("imagemT.png", width, height, channels, segmentador, original_imageData);
-    color_segments_by_average("imagemT2.png", width, height, channels, segmentador, original_imageData);
+    write_segmented_image("output/CompixelFundido.png", width, height, channels, segmentador, original_imageData);
+    color_segments_by_average("output/CompixelFundidoColorido.png", width, height, channels, segmentador, original_imageData);
 }
