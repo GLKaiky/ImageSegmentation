@@ -133,11 +133,13 @@ unsigned char* create_graph(const char * imagePath, Undirected_graph &graph) {
     
     int height, width, original_channels;
     
+
+
     // Força o carregamento com 3 canais (RGB)
     unsigned char * imageData = stbi_load(imagePath, &width, &height, &original_channels, 3); 
 
     imageData = toGaussian_blur(imageData, width, height, original_channels); //faz blur na imagem, que vai melhorar a segmentação
-
+    
     escreverImagem("output/imagemGaussiana.png", width, height, 3, imageData);
 
     unsigned char* sobelData = sobelFilter(imageData, width, height, 3);
@@ -158,7 +160,7 @@ unsigned char* create_graph(const char * imagePath, Undirected_graph &graph) {
 
 
  
-    const double W = 150.0;
+    const double W = 100.0;
     
     //Verificar todos os 8 pixels em volta da imagem
     const int dx[] = {-1, -1, -1,  0, 0,  1, 1, 1};
@@ -170,8 +172,8 @@ unsigned char* create_graph(const char * imagePath, Undirected_graph &graph) {
         for (int x = 0; x < width; ++x) {
             unsigned long index = (y * width + x) * channels_in_memory;
             CIELAB current = RGBtoLab(imageData[index], imageData[index + 1], imageData[index + 2]);
-
-
+           
+            
             for (int i = 0; i < 8; i++) {
                 int nextX = x + dx[i];
                 int nextY = y + dy[i];
@@ -316,10 +318,10 @@ void color_segments_by_average(const char* output_filename, int width, int heigh
 
 int main() {
     Undirected_graph g;
-    const char* path = "images/templates/kirian5.jpeg";
+    const char* path = "images/templates/000000002157.jpg";
     const char* output_path = "images/cerebro.jpg";
-    const int K = 200; 
-    const int MIN_SEGMENT_SIZE = 1500;
+    const int K = 50; 
+    const int MIN_SEGMENT_SIZE = 600;
 
    std::cout << "Carregando imagem e criando grafo..." << std::endl;
     unsigned char* original_imageData = create_graph(path, g);
@@ -327,6 +329,7 @@ int main() {
     if (original_imageData == nullptr) {
         return 1;
     }
+
     std::vector<ARESTA> sortedEdges = g.sort_edges();
 
     std::cout << "Executando o algoritmo de Kruskal..." << std::endl;

@@ -89,7 +89,7 @@ class Undirected_graph : public Graph{
         }
 
         
-    /*
+    /** 
     * @brief Faz o algoritmo de Kruskal para criar em um vector a MST do Grafo, ou AGM (Arvore Geradora Minima)
     * @param A própria lista de adjacência do grafo
     */

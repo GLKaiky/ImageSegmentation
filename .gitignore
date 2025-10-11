@@ -44,6 +44,6 @@ build
 
 .vscode
 
-/images/templates/*
+/input
 
 venv

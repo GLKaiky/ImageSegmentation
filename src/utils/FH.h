@@ -29,7 +29,7 @@ class FH {
     void FelzenszwalbNHuttenlocher(ARESTA edge) {
         int root_u = find(edge.u);
         int root_v = find(edge.v);
-
+  
         if (root_u != root_v) {
             int t1 = k / (double)component_size[root_v];
             int t2 = k / (double)component_size[root_u];
