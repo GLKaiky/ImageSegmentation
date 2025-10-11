@@ -1,5 +1,5 @@
 /******************************************************************************
- * @file: Image_Processing.cpp
+ * @file: Image_Processing.h
  * @author: Kaiky França da Silva | Puc Minas
  * @brief: Este arquivo contém as funções responsáveis por converter
  * uma imagem digital em uma estrutura de dados de grafo não direcionado e ponderado. A lógica principal
@@ -7,6 +7,10 @@
  * @version 0.1
  * @date 2025-09-25
  *****************************************************************************/
+
+
+#ifndef IMAGE_PROCESSSING_H
+#define IMAGEM_PROCESSING_H 
 
 #include "stb/stb_image.h"
 #include "stb/stb_image_write.h"
@@ -139,7 +143,8 @@ unsigned char* create_graph(const char * imagePath, Undirected_graph &graph) {
     unsigned char * imageData = stbi_load(imagePath, &width, &height, &original_channels, 3); 
 
     imageData = toGaussian_blur(imageData, width, height, original_channels); //faz blur na imagem, que vai melhorar a segmentação
-    
+    imageData = toGaussian_blur(imageData, width, height, original_channels); 
+
     escreverImagem("output/imagemGaussiana.png", width, height, 3, imageData);
 
     unsigned char* sobelData = sobelFilter(imageData, width, height, 3);
@@ -160,7 +165,7 @@ unsigned char* create_graph(const char * imagePath, Undirected_graph &graph) {
 
 
  
-    const double W = 100.0;
+    const double W = 500.0;
     
     //Verificar todos os 8 pixels em volta da imagem
     const int dx[] = {-1, -1, -1,  0, 0,  1, 1, 1};
@@ -316,12 +321,8 @@ void color_segments_by_average(const char* output_filename, int width, int heigh
     delete[] output_data;
 }
 
-int main() {
+int processImage(const char* path, const char* output_path, const int K, const int MIN_SEGMENT_SIZE) {
     Undirected_graph g;
-    const char* path = "images/templates/000000002157.jpg";
-    const char* output_path = "images/cerebro.jpg";
-    const int K = 50; 
-    const int MIN_SEGMENT_SIZE = 600;
 
    std::cout << "Carregando imagem e criando grafo..." << std::endl;
     unsigned char* original_imageData = create_graph(path, g);
@@ -344,4 +345,7 @@ int main() {
     std::cout << "Segmentando" << std::endl;
     write_segmented_image("output/CompixelFundido.png", width, height, channels, segmentador, original_imageData);
     color_segments_by_average("output/CompixelFundidoColorido.png", width, height, channels, segmentador, original_imageData);
+
+    return 0;
 }
+#endif

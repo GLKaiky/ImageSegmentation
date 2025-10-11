@@ -1,9 +1,19 @@
+/******************************************************************************
+ * @file: Filters.h
+ * @author: Kaiky França da Silva | Puc Minas
+ * @brief: Arquivo com os filtros de pré e pós processamento de imagem
+ * @version 0.1
+ * @date 2025-10-11
+ *****************************************************************************/
+
 #include "PixelConfiguration.h"
 #include <math.h>
 #include <algorithm>
 
 #ifndef FILTERS_H
 #define FILTERS_H
+
+
 /** 
  * @brief Faz a conversão do padrão RGB para o padrão CIELAB (melhor percepção das cores)
  * @param R (red)
@@ -82,6 +92,15 @@ unsigned char* toGray(unsigned char* imageData, int width, int height, int chann
     return outputData;
 }
 
+/**
+ * @brief Função que vai aplicar os kernels do algoritmo de Sobel, para marcar e definir as bordas 
+ * das imagems
+ * @param originalData dados da imagem em seu estado atual
+ * @param width Largura da imagem
+ * @param height Altura da imagem
+ * @param channels quantos canais a imagem possui
+ */
+
 unsigned char* sobelFilter(unsigned char* originalData, int width, int height, int channels) {
     size_t bufferSize = width * height;
     PixelColor pixel;
@@ -159,6 +178,8 @@ unsigned char* toGaussian_blur(unsigned char* originalData ,int width, int heigh
     };
 
 
+    constexpr double kernel_weight = 16.0;
+
     size_t buffer_size = width * height * channels;
 
     unsigned char* outputData = new unsigned char[buffer_size];
@@ -193,9 +214,9 @@ unsigned char* toGaussian_blur(unsigned char* originalData ,int width, int heigh
                 }
             }
 
-            outputData[index] = static_cast<unsigned char>(sumR/16.0);
-            outputData[index+1] = static_cast<unsigned char>(sumG/16.0);
-            outputData[index+2] = static_cast<unsigned char>(sumB/16.0);
+            outputData[index] = static_cast<unsigned char>(sumR/kernel_weight);
+            outputData[index+1] = static_cast<unsigned char>(sumG/kernel_weight);
+            outputData[index+2] = static_cast<unsigned char>(sumB/kernel_weight);
 
         }
 

@@ -6,21 +6,14 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON) 
 
 add_executable(${PROJECT_NAME}
-
     main.cpp
     libs/stb/std_image_impl.cpp 
-)
-
-add_executable(tests
-    src/stb/image_processing.cpp
+    src/stb/image_processing.h
     libs/stb/std_image_impl.cpp 
     libs/stb/stb_image_write_impl.cpp
-
 )
 
-
-target_include_directories(${PROJECT_NAME} PRIVATE "libs")
-target_include_directories(tests PRIVATE 
+target_include_directories(${PROJECT_NAME} PRIVATE 
                             "libs"
-                            "src"
+                            "src" 
                         )

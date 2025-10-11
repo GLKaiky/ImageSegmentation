@@ -37,7 +37,7 @@ class UnionFind {
     }
     
 
-    /*
+    /**
     * @brief Union sets vai fazer as operações de find e fazer a união dos conjuntos 
     *CASO ELE NÃO FECHE CICLOS, caso feche, ele ignora
     * 
@@ -58,7 +58,7 @@ class UnionFind {
         }
     }
 
-    /*
+    /**
     * @brief Função find vai encontrar o parent daquele conjunto, inicialmente sendo ele mesmo, porém quando o conjunto cresce ele
     * se modificar para a raiz principal para otimização
     * @param i o elemento que estou procurando seu parent

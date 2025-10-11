@@ -1,3 +1,13 @@
+/******************************************************************************
+ * @file: FH.h
+ * @author: Kaiky França da Silva | Puc Minas
+ * @brief: O arquivo que vai implementar o algoritmo de Felzenswalb, inspirado em Kruskall
+ * ele vai garantir os cortes inteligentes da MST
+ * @version 0.1
+ * @date 2025-10-11
+ *****************************************************************************/
+
+
 #ifndef FH_H
 #define FH_H
 
