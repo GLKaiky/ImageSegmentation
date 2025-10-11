@@ -13,6 +13,7 @@
 #include <utility>
 #include <iostream>
 
+
 class Graph {
     protected:
         std::vector<std::list<std::pair<int, double> >> adj;
