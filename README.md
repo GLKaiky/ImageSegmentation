@@ -1,7 +1,17 @@
 -----
 
 # Segmentação de Imagens com Grafos
-<a href="https://www.gnu.org/licenses/gpl-3.0"><img alt="License: GPL v3" src="https://img.shields.io/badge/License-GPLv3-blue.svg?style=for-the-badge"></a>
+<p>
+    <a href="#">
+        <img alt="Linguagem: C++" src="https://img.shields.io/badge/C++-%2300599c?style=for-the-badge&logo=cplusplus&logoColor=white">
+    </a>
+    <a href="#">
+        <img alt="Domínio: Grafos" src="https://img.shields.io/badge/Domínio-Grafos-2ea44f?style=for-the-badge">
+    </a>
+    <a href="https://www.gnu.org/licenses/gpl-3.0">
+        <img alt="License: GPL v3" src="https://img.shields.io/badge/License-GPLv3-blue.svg?style=for-the-badge">
+    </a>
+</p>
 
 **Trabalho Prático da disciplina de Teoria dos Grafos e Computabilidade** **Pontifícia Universidade Católica de Minas Gerais** **Prof. Matheus B. Pereira - 2025/2**
 
