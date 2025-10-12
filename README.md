@@ -3,11 +3,6 @@
 # Segmentação de Imagens com Grafos
 <a href="https://www.gnu.org/licenses/gpl-3.0"><img alt="License: GPL v3" src="https://img.shields.io/badge/License-GPLv3-blue.svg?style=for-the-badge"></a>
 
-\<p align="center"\>
-\<img alt="C++ Badge" src="[https://img.shields.io/badge/C++-%2300599c?style=for-the-badge\&logo=cplusplus\&logoColor=white](https://img.shields.io/badge/C++-%2300599c?style=for-the-badge&logo=cplusplus&logoColor=white)"\>
-\<img alt="Algorithm Badge" src="[https://img.shields.io/badge/Algorithm-Felzenszwalb%20%26%20Huttenlocher-blue?style=for-the-badge](https://www.google.com/search?q=https://img.shields.io/badge/Algorithm-Felzenszwalb%2520%2526%2520Huttenlocher-blue%3Fstyle%3Dfor-the-badge)"\>
-\</p\>
-
 **Trabalho Prático da disciplina de Teoria dos Grafos e Computabilidade** **Pontifícia Universidade Católica de Minas Gerais** **Prof. Matheus B. Pereira - 2025/2**
 
 Este projeto implementa o algoritmo de segmentação de imagens de **Felzenszwalb & Huttenlocher**, um método eficiente que modela a imagem como um grafo e agrupa pixels em regiões de forma perceptualmente significativa, baseado em um critério de união derivado da teoria de Árvores Geradoras Mínimas (MST).
