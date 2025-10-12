@@ -7,7 +7,7 @@
     </a>
     <br>
     <a href="#">
-        <img alt="Domínio: Grafos" src="https://img.shields.io/badge/Domínio-Grafos-2ea44f?style=for-the-badge">
+        <img alt="Grafos" src="https://img.shields.io/badge/Grafos-2ea44f?style=for-the-badge">
     </a>
     <br>
     <a href="https://www.gnu.org/licenses/gpl-3.0">
