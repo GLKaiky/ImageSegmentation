@@ -5,9 +5,11 @@
     <a href="#">
         <img alt="Linguagem: C++" src="https://img.shields.io/badge/C++-%2300599c?style=for-the-badge&logo=cplusplus&logoColor=white">
     </a>
+    <br>
     <a href="#">
         <img alt="Domínio: Grafos" src="https://img.shields.io/badge/Domínio-Grafos-2ea44f?style=for-the-badge">
     </a>
+    <br>
     <a href="https://www.gnu.org/licenses/gpl-3.0">
         <img alt="License: GPL v3" src="https://img.shields.io/badge/License-GPLv3-blue.svg?style=for-the-badge">
     </a>
