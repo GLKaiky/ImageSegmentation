@@ -26,6 +26,7 @@ O objetivo principal é implementar o algoritmo de Felzenszwalb & Huttenlocher p
 ## 👥 Integrantes do Grupo
 
   - [Kaiky França](https://github.com/GLKaiky)
+  - [Raquel Motta](https://github.com/raksmotta)
   - [Beltrano de Souza](https://github.com/usuario-beltrano)
 ### Agradecimentos
 
