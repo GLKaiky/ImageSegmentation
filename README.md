@@ -27,8 +27,8 @@ O objetivo principal é implementar o algoritmo de Felzenszwalb & Huttenlocher p
 
   - [Kaiky França](https://github.com/GLKaiky)
   - [Mateus Resende](https://github.com/Mateus-Resende-Ottoni)
+  - [Mateus Ribeiro](https://github.com/L0L0VIS)
   - [Raquel Motta](https://github.com/raksmotta)
-  - [Beltrano de Souza](https://github.com/usuario-beltrano)
 ### Agradecimentos
 
 - Obrigado pelo `README.md` - [Giuseppe Cordeiro](https://github.com/giusfds)
