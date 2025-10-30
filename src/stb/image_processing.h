@@ -142,9 +142,11 @@ unsigned char* create_graph(const char * imagePath, Undirected_graph &graph) {
     // Força o carregamento com 3 canais (RGB)
     unsigned char * imageData = stbi_load(imagePath, &width, &height, &original_channels, 3); 
 
-    imageData = toGaussian_blur(imageData, width, height, original_channels); //faz blur na imagem, que vai melhorar a segmentação
-    imageData = toGaussian_blur(imageData, width, height, original_channels); 
+    std::cout << original_channels << std::endl;
 
+
+    imageData = toGaussian_blur(imageData, width, height, 3); //faz blur na imagem, que vai melhorar a segmentação
+    imageData = toGaussian_blur(imageData, width, height, 3);
     escreverImagem("output/imagemGaussiana.png", width, height, 3, imageData);
 
     unsigned char* sobelData = sobelFilter(imageData, width, height, 3);
