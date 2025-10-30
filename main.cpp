@@ -3,8 +3,6 @@
 #include <chrono> 
 #include "stb/image_processing.h"
 
-
-
 #define PATH "images/vinishow.jpg"
 #define OUTPUT_PATH "/output/saida.png"
 #define K_VALUE 500
