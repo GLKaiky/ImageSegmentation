@@ -145,13 +145,14 @@ unsigned char* create_graph(const char * imagePath, Undirected_graph &graph) {
     std::cout << original_channels << std::endl;
 
 
-    imageData = toGaussian_blur(imageData, width, height, 3); //faz blur na imagem, que vai melhorar a segmentação
+    imageData = toGaussian_blur(imageData, width, height, 3); //Faz blur na imagem, que vai melhorar a segmentação
     imageData = toGaussian_blur(imageData, width, height, 3);
-    escreverImagem("output/imagemGaussiana.png", width, height, 3, imageData);
+    
+    escreverImagem("output/ImagemGaussiana.png", width, height, 3, imageData);
 
     unsigned char* sobelData = sobelFilter(imageData, width, height, 3);
 
-    escreverImagem("output/imagemSobel.png", width, height, 1, sobelData);
+    escreverImagem("output/ImagemSobel.png", width, height, 1, sobelData);
 
 
     if(imageData == nullptr) {
@@ -345,8 +346,8 @@ int processImage(const char* path, const char* output_path, const int K, const i
     int channels = 3;
 
     std::cout << "Segmentando" << std::endl;
-    write_segmented_image("output/CompixelFundido.png", width, height, channels, segmentador, original_imageData);
-    color_segments_by_average("output/CompixelFundidoColorido.png", width, height, channels, segmentador, original_imageData);
+    write_segmented_image("output/ImagemComBordas.png", width, height, channels, segmentador, original_imageData);
+    color_segments_by_average("output/ImagemComPixelFundidoColorido.png", width, height, channels, segmentador, original_imageData);
 
     return 0;
 }

@@ -3,10 +3,15 @@
 #include <chrono> 
 #include "stb/image_processing.h"
 
-#define PATH "images/vinishow.jpg"
+#define PATH "images/Coconut Database/000000000632.jpg"
 #define OUTPUT_PATH "/output/saida.png"
-#define K_VALUE 500
-#define MIN_SEGMENT_SIZE 600
+#define K_VALUE 600
+#define MIN_SEGMENT_SIZE 500
+
+/*
+    K - Quanto Menor o Valor de K_Value, mais exigente com cores o algoritmo será
+    MIN_SEGMENT_SIZE quanto menor o valor, menores os segmentos criados pelo algoritmo
+*/
 
 int main() {
     std::cout << "Processando imagem: " << PATH << std::endl;
