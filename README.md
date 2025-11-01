@@ -15,8 +15,6 @@
     </a>
 </p>
 
-**Trabalho Prático da disciplina de Teoria dos Grafos e Computabilidade** **Pontifícia Universidade Católica de Minas Gerais** **Prof. Matheus B. Pereira - 2025/2**
-
 Este projeto implementa o algoritmo de segmentação de imagens de **Felzenszwalb & Huttenlocher**, um método eficiente que modela a imagem como um grafo e agrupa pixels em regiões de forma perceptualmente significativa, baseado em um critério de união derivado da teoria de Árvores Geradoras Mínimas (MST).
 
 ## 📋 Objetivos do Projeto
