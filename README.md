@@ -24,10 +24,10 @@ O objetivo principal é implementar o algoritmo de Felzenszwalb & Huttenlocher p
 ## 👥 Integrantes do Grupo
 
   - [Kaiky França](https://github.com/GLKaiky)
+  - [Luís Fernando Rdorigues Braga](https://github.com/Trinalsolid)
   - [Mateus Resende](https://github.com/Mateus-Resende-Ottoni)
   - [Mateus Ribeiro](https://github.com/L0L0VIS)
   - [Raquel Motta](https://github.com/raksmotta)
-  - [Luís Fernando Rdorigues Braga](https://github.com/Trinalsolid)
 ### Agradecimentos
 
 - Obrigado pelo `README.md` - [Giuseppe Cordeiro](https://github.com/giusfds)
