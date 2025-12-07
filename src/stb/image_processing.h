@@ -325,7 +325,8 @@ void color_segments_by_average(const char* output_filename, int width, int heigh
 }
 
 int processImage(const char* path, const char* output_path, const int K, const int MIN_SEGMENT_SIZE) {
-    Undirected_graph g;
+   
+   /* Undirected_graph g;
 
    std::cout << "Carregando imagem e criando grafo..." << std::endl;
     unsigned char* original_imageData = create_graph(path, g);
@@ -348,6 +349,9 @@ int processImage(const char* path, const char* output_path, const int K, const i
     std::cout << "Segmentando" << std::endl;
     write_segmented_image("output/ImagemComBordas.png", width, height, channels, segmentador, original_imageData);
     color_segments_by_average("output/ImagemComPixelFundidoColorido.png", width, height, channels, segmentador, original_imageData);
+*/
+    int width, height, original_channels;
+    unsigned char * imageData = stbi_load(path, &width, &height, &original_channels, 3); 
 
     return 0;
 }

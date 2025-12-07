@@ -2,10 +2,13 @@
 #include <string>
 #include <chrono> 
 #include "stb/image_processing.h"
+#include "stb/second_image_processing.h"
+#include "utils/IFT.h"
+#include "stb/third_image_processing.h"
 
-#define PATH "images/Coconut Database/000000000632.jpg"
-#define OUTPUT_PATH "/output/saida.png"
-#define K_VALUE 600
+#define PATH "images/nebula.jpg"
+#define OUTPUT_PATH "saida.png"
+#define K_VALUE 400
 #define MIN_SEGMENT_SIZE 500
 
 /*
@@ -14,20 +17,50 @@
 */
 
 int main() {
-    std::cout << "Processando imagem: " << PATH << std::endl;
-    std::cout << "K=" << K_VALUE << ", MinSize=" << MIN_SEGMENT_SIZE << std::endl;
 
-    auto start = std::chrono::high_resolution_clock::now();
+    // 1. Instancia o processador
+    ImageSegmenter segmenter;
+    int width, height, channels;
 
-    processImage(PATH, OUTPUT_PATH, K_VALUE, MIN_SEGMENT_SIZE);
-    auto stop = std::chrono::high_resolution_clock::now();
+    unsigned char* img = stbi_load(PATH, &width, &height, &channels, 3);
 
-    auto duration_ms = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
+    SegmentationConfig config;
+    config.blockSize = 4;
+    config.sobelThreshold = 500.0; // Ajuste fino
+    segmenter.setConfig(config);
+
+    // 3. Carrega Imagem
+    if (!segmenter.load(PATH)) {
+        return -1;
+    }
+
+    // 4. Calcula Sementes (Externamente ou internamente)
+    // Supondo que você use sua função salienceMap existente:
+    std::vector<double> map = salienceMap(PATH); 
+    // Nota: Idealmente, adapte salienceMap para não ler o arquivo do disco de novo
+    // mas por hora, isso funciona.
     
-    std::chrono::duration<double> duration_sec = stop - start;
+    // Obtenha as dimensões da imagem carregada se precisar para getSeeds
+    // Mas salienceMap/getSeeds atual já lida com isso.
+    Seeds seeds = getSeeds(map, width, height); // Passe largura/altura corretas
 
-    std::cout << "----------------------------------------" << std::endl;
-    std::cout << "Tempo de execucao: " << duration_ms.count() << " ms" << std::endl;
-    std::cout << "Tempo de execucao: " << duration_sec.count() << " s" << std::endl;
-    std::cout << "----------------------------------------" << std::endl;
+
+    segmenter.saveSeedsDebug(OUTPUT_PATH, width, height, seeds);
+    // 5. Roda e Salva
+    segmenter.runWithSeeds(seeds, "output/resultado_final.png");
+
+    std::cout << "Processamento concluido com sucesso!" << std::endl;
+   
+    IFT segmentador;
+    std::vector<int> labels;
+
+    // RODA O IFT AUTOMÁTICO
+    segmentador.runAutomatic(img, width, height, labels);
+
+    // SALVA O RESULTADO
+    saveSegmentation(labels, img, width, height, "output/resultado_ift.png");
+    
+    stbi_image_free(img);
+    
+    return 0;
 }

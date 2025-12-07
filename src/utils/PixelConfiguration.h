@@ -20,6 +20,23 @@ struct CIELAB {
     double b;
 };
 
+struct MeanColor {
+    double r, g, b;
+};
+
+struct SuperPixel {
+    int id;
+    double L, a, b;         // Para o cálculo de distância (Grafo)
+    unsigned char avgR, avgG, avgB; // NOVA: Para a pintura (Visualização)
+    int x_center, y_center;
+};
+
+struct MapStats {
+    double mean;
+    double stdDev;
+    double maxVal;
+};
+
 struct ARESTA {
     int u, v;
     double weight;
@@ -30,4 +47,27 @@ struct ColorSum {
     long long r = 0, g = 0, b = 0;
     int count = 0;
 };
+
+struct grayPixel {
+    int pixelIndex;
+    unsigned char scale;
+};
+
+struct pixelLocation {
+    int id;
+    long r, g, b;
+};
+
+struct Seeds{
+    std::vector<int> backgroundObj;
+    std::vector<int> obj;
+};
+
+struct Edge {
+    int u;
+    int v;
+    double weight;
+    int edgeId;
+};
+
 #endif

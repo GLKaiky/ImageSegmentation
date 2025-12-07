@@ -16,7 +16,7 @@
 
 class Graph {
     protected:
-        std::vector<std::list<std::pair<int, double> >> adj;
+        std::vector<std::vector<std::pair<int, double> >> adj;
         int size;
     
     public:
@@ -27,6 +27,8 @@ class Graph {
             this->adj.resize(size);
             this->size = size;
         }
+
+        int getSize() const { return size; }
 };
 
 #endif

@@ -224,4 +224,241 @@ unsigned char* toGaussian_blur(unsigned char* originalData ,int width, int heigh
     return outputData;   
 }
 
+
+
+// Constantes estáticas para facilitar
+static const double DIST_ORTHO = 1.0;
+static const double DIST_DIAG = 1.41421356;
+static const double INF_VAL = std::numeric_limits<double>::max();
+
+// 1. Função Genérica de EDT (Baseada em L do CIELAB)
+// Agora retorna o mapa de distâncias para quem quiser usar
+inline std::vector<double> computeGlobalEDT(const unsigned char* img, int w, int h) {
+    int numPixels = w * h;
+    std::vector<double> dist(numPixels);
+
+    for (int i = 0; i < numPixels; ++i) {
+        unsigned char r = img[i * 3];
+        unsigned char g = img[i * 3 + 1];
+        unsigned char b = img[i * 3 + 2];
+
+        CIELAB lab = RGBtoLab(r, g, b); 
+        
+        // Critério de "Objeto": Cinza Médio (Pulmão/Pneumonia)
+        if (lab.L > 30.0 && lab.L < 85.0) { 
+            dist[i] = INF_VAL; 
+        } else {
+            dist[i] = 0.0; 
+        }
+    }
+
+    // Passada Frente
+    for (int y = 1; y < h - 1; ++y) {
+        for (int x = 1; x < w - 1; ++x) {
+            int i = y * w + x;
+            if (dist[i] == 0.0) continue; 
+
+            double d_up   = dist[(y - 1) * w + x] + DIST_ORTHO;
+            double d_left = dist[y * w + (x - 1)] + DIST_ORTHO;
+            double d_ul   = dist[(y - 1) * w + (x - 1)] + DIST_DIAG;
+            double d_ur   = dist[(y - 1) * w + (x + 1)] + DIST_DIAG;
+
+            dist[i] = std::min({dist[i], d_up, d_left, d_ul, d_ur});
+        }
+    }
+
+    // Passada Trás
+    for (int y = h - 2; y >= 1; --y) {
+        for (int x = w - 2; x >= 1; --x) {
+            int i = y * w + x;
+            if (dist[i] == 0.0) continue;
+
+            double d_down  = dist[(y + 1) * w + x] + DIST_ORTHO;
+            double d_right = dist[y * w + (x + 1)] + DIST_ORTHO;
+            double d_dl    = dist[(y + 1) * w + (x - 1)] + DIST_DIAG;
+            double d_dr    = dist[(y + 1) * w + (x + 1)] + DIST_DIAG;
+
+            dist[i] = std::min({dist[i], d_down, d_right, d_dl, d_dr});
+        }
+    }
+    return dist;
+}
+
+// 2. Função para extrair sementes desse mapa
+inline Seeds extractSeedsFromMap(const std::vector<double>& distMap, int w, int h) {
+    Seeds seeds;
+    double maxDist = 0.0;
+    
+    for (double d : distMap) {
+        if (d < INF_VAL && d > maxDist) maxDist = d;
+    }
+
+    if (maxDist < 1.0) return seeds;
+
+    double threshold = maxDist * 0.5; 
+    int step = 6; 
+
+    for (int y = step; y < h - step; y += step) {
+        for (int x = step; x < w - step; x += step) {
+            int idx = y * w + x;
+            
+            if (distMap[idx] > threshold) {
+                seeds.obj.push_back(idx);
+            }
+            else if (distMap[idx] == 0.0) {
+                if (x < w*0.1 || x > w*0.9 || y < h*0.1 || y > h*0.9) {
+                    seeds.backgroundObj.push_back(idx);
+                }
+            }
+        }
+    }
+    return seeds;
+}
+
+std::vector<double> salienceMap(const char *imagePath) {
+    int width, height, channels;
+    unsigned char *data = stbi_load(imagePath, &width, &height, &channels, 3);
+    if (!data) return {};
+
+    int numPixels = width * height;
+    std::vector<double> saliency(numPixels);
+    double maxSal = 0;
+
+    // Centro da imagem (para priorizar o meio e ignorar bordas/marcador R)
+    double centerX = width / 2.0;
+    double centerY = height / 2.0;
+    
+    // Constante para Gaussiana (Ajuste de foco)
+    double sigma = width * 0.35; 
+    double twoSigmaSq = 2 * sigma * sigma;
+
+    for (int i = 0; i < numPixels; ++i) {
+        int idx = i * 3;
+        
+        // 1. Obter Luminância (0..1)
+        double normalizedL = data[idx] / 255.0;
+         
+        double intensityScore = 0.0;
+        
+        if (normalizedL < 0.4) {
+            intensityScore = 0.0; 
+        } else {
+            // Valoriza o escuro (quanto menor L, maior o score)
+            intensityScore = normalizedL; 
+        }
+
+        // 3. Peso Espacial (Center Bias)
+        int y = i / width;
+        int x = i % width;
+        double dx = x - centerX;
+        double dy = y - centerY;
+        double distCenterSq = dx*dx + dy*dy; // Distância ao quadrado
+        
+        // Gaussian falloff
+        double centerWeight = exp(-(distCenterSq) / twoSigmaSq);
+
+        // Saliência Final
+        double finalVal = intensityScore * centerWeight;
+
+        saliency[i] = finalVal;
+        if(finalVal > maxSal) maxSal = finalVal;
+    }
+
+    // Normaliza
+    if(maxSal > 0) {
+        for(int i=0; i<numPixels; i++) saliency[i] /= maxSal;
+    }
+
+    stbi_image_free(data);
+    return saliency;
+}
+
+// ----------------------------------------------------------------------------
+// 2. Extração de Sementes (Compatível com o Mapa acima)
+// ----------------------------------------------------------------------------
+Seeds getSeeds(const std::vector<double>& map, int width, int height) {
+    Seeds seeds;
+    if (map.empty()) return seeds;
+
+    // Estatísticas Básicas
+    double sum = 0.0;
+    double maxVal = 0.0;
+    for (double v : map) {
+        sum += v;
+        if (v > maxVal) maxVal = v;
+    }
+    double mean = sum / map.size();
+
+    // Desvio Padrão
+    double sqSum = 0.0;
+    for (double v : map) sqSum += (v - mean) * (v - mean);
+    double stdDev = std::sqrt(sqSum / map.size());
+
+    // Limiares (Ajustados para o mapa de "Escuros Centrais")
+    // Objeto: Regiões muito escuras no centro (Alta saliência nesse algoritmo)
+    double objThresh = mean + stdDev; 
+    
+    // Fundo: Regiões claras ou nas bordas (Baixa saliência)
+    double bkgThresh = mean * 0.5;
+
+    int step = 6; 
+    int margin = 2;
+
+    for (int y = margin; y < height - margin; y += step) {
+        for (int x = margin; x < width - margin; x += step) {
+            int idx = y * width + x;
+            double val = map[idx];
+
+            int objVotes = 0;
+            int bkgVotes = 0;
+
+            // Votação 3x3
+            for (int ky = -1; ky <= 1; ++ky) {
+                for (int kx = -1; kx <= 1; ++kx) {
+                    int nIdx = (y + ky) * width + (x + kx);
+                    if (map[nIdx] > objThresh) objVotes++;
+                    if (map[nIdx] < bkgThresh) bkgVotes++;
+                }
+            }
+
+            // Decisão
+            if (val > objThresh && objVotes >= 5) {
+                seeds.obj.push_back(idx);
+            }
+            else if (val < bkgThresh && bkgVotes >= 5) {
+                // Proteção extra para garantir fundo nas bordas
+                bool isEdge = (x < width * 0.15 || x > width * 0.85 || 
+                               y < height * 0.15 || y > height * 0.85);
+                
+                if (isEdge || val < 0.01) {
+                    seeds.backgroundObj.push_back(idx);
+                }
+            }
+        }
+    }
+    return seeds;
+}
+
+void apply_gamma(unsigned char* imgData, int width, int height, int channels, float gamma) {
+     
+    unsigned char lut[256];
+    float invGamma = 1.0f / gamma;
+
+    for (int i = 0; i < 256; i++) {
+        float normalized = i / 255.0f;
+        float value = pow(normalized, invGamma) * 255.0f;
+        
+        if (value > 255) value = 255;
+        lut[i] = (unsigned char)value;
+    }
+
+    // Aplica na imagem inteira
+    int totalBytes = width * height * channels;
+    for (int i = 0; i < totalBytes; i++) {
+        imgData[i] = lut[imgData[i]];
+    }
+    stbi_write_png("output/output_gamma.png", width, height, channels, imgData, width*3);
+
+}
+
 #endif
