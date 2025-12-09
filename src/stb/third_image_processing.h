@@ -106,5 +106,54 @@ void saveSegmentation(const std::vector<int>& labels, const unsigned char* origi
     stbi_write_png(filename, w, h, 3, out.data(), w * 3);
 }
 
+/**
+ * @brief Gera uma imagem contendo apenas as bordas da segmentação IFT.
+ * @param labels Vetor com os rótulos de saída da IFT (0 ou 1).
+ * @param w Largura da imagem.
+ * @param h Altura da imagem.
+ * @param filename Caminho para salvar a imagem de borda.
+ */
+void saveIFTBoundaries(const std::vector<int>& labels, int w, int h, const char* filename) {
+    // Cria buffer para imagem de saída (3 canais RGB), inicializado com preto (0)
+    std::vector<unsigned char> out(w * h * 3, 0);
 
+    // Deslocamentos para checar os 4 vizinhos (cima, baixo, esq, dir)
+    int dx[] = {1, -1, 0, 0};
+    int dy[] = {0, 0, 1, -1};
+
+    for (int y = 0; y < h; ++y) {
+        for (int x = 0; x < w; ++x) {
+            int idx = y * w + x;
+            int currentLabel = labels[idx];
+            bool isBorder = false;
+
+            // Verifica os 4 vizinhos
+            for (int i = 0; i < 4; ++i) {
+                int nx = x + dx[i];
+                int ny = y + dy[i];
+
+                // Verifica se o vizinho está dentro dos limites da imagem
+                if (nx >= 0 && nx < w && ny >= 0 && ny < h) {
+                    int nIdx = ny * w + nx;
+                    
+                    // SE o vizinho tem um rótulo diferente do pixel atual, detectamos uma borda
+                    if (labels[nIdx] != currentLabel) {
+                        isBorder = true;
+                        break; // Já sabemos que é borda, não precisa checar os outros
+                    }
+                }
+            }
+
+            // Se for borda, pintamos de Branco (255, 255, 255)
+            // Se quiser outra cor (ex: Vermelho), use: 255, 0, 0
+            if (isBorder) {
+                out[idx * 3]     = 255; 
+                out[idx * 3 + 1] = 255;
+                out[idx * 3 + 2] = 255;
+            }
+        }
+    }
+
+    stbi_write_png(filename, w, h, 3, out.data(), w * 3);
+}
 #endif

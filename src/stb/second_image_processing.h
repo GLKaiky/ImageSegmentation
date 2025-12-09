@@ -34,7 +34,7 @@ struct SegmentationConfig {
     double sobelThreshold = 60.0;// Limite para considerar barreira
     double sobelPenalty = 2.0;   // Multiplicador de peso para barreiras
     double colorWeight = 0.5;    // Peso da diferença de cor (L*a*b*)
-    double spatialWeight = 0.5;  // Peso da distância física
+    double spatialWeight = 3.5;  // Peso da distância física
     double seedPriority = -99999.0; // Peso para ligar Ghost -> Seeds
 };
 
@@ -156,15 +156,17 @@ public:
         int gW = (width + config.blockSize - 1) / config.blockSize;
 
         // Injeta Arestas das Sementes
-        for(int s : seeds.obj) {
+
+        for(int s : seeds.backgroundObj) {
             int spID = ((s / width) / config.blockSize) * gW + ((s % width) / config.blockSize);
+            
             if (spID < (int)superPixels.size()) {
                 edges.push_back({ghostRoot, spID, config.seedPriority, nextId++});
             }
         }
-        for(int s : seeds.backgroundObj) {
+
+        for(int s : seeds.obj) {
             int spID = ((s / width) / config.blockSize) * gW + ((s % width) / config.blockSize);
-            
             if (spID < (int)superPixels.size()) {
                 edges.push_back({ghostRoot, spID, config.seedPriority, nextId++});
             }
@@ -174,6 +176,101 @@ public:
         
         // Precisamos reconstruir a lógica de labels baseada nas seeds para pintar
         renderFromTreeAndSeeds(tree, seeds, outputPath);
+
+        saveDebugBorders(tree, seeds, "../output/edmonds/bordas_edmonds.png");
+    }
+
+    // Método para debug visual: Sobrepõe bordas dos segmentos na imagem original
+    void saveDebugBorders(const std::vector<Edge>& tree, const Seeds& seeds, const std::string& filename) {
+        int numSPs = superPixels.size();
+        
+        // --- 1. Recalcula os Labels (Mesma lógica do renderFromTreeAndSeeds) ---
+        // (Idealmente, você transformaria 'labels' em membro da classe para não recalcular)
+        std::vector<std::vector<int>> adj(numSPs);
+        for (const auto& e : tree) {
+            if (e.u < numSPs && e.v < numSPs) adj[e.u].push_back(e.v);
+        }
+
+        std::vector<int> labels(numSPs, 2); // 2 = Unknown
+        std::queue<int> q;
+
+        auto mapPixelToSP = [&](int pixelIdx) {
+            int py = pixelIdx / width;
+            int px = pixelIdx % width;
+            return (py / config.blockSize) * gridW + (px / config.blockSize);
+        };
+
+        for (int s : seeds.obj) {
+            int sp = mapPixelToSP(s);
+            if (sp < numSPs && labels[sp] == 2) { labels[sp] = 1; q.push(sp); }
+        }
+        for (int s : seeds.backgroundObj) {
+            int sp = mapPixelToSP(s);
+            if (sp < numSPs && labels[sp] == 2) { labels[sp] = 0; q.push(sp); }
+        }
+
+        while(!q.empty()) {
+            int u = q.front(); q.pop();
+            for (int v : adj[u]) {
+                if (labels[v] == 2) {
+                    labels[v] = labels[u];
+                    q.push(v);
+                }
+            }
+        }
+
+        // --- 2. Renderização das Bordas ---
+        std::vector<unsigned char> output(width * height * 3);
+        int bs = config.blockSize;
+
+        for (int y = 0; y < height; ++y) {
+            for (int x = 0; x < width; ++x) {
+                int idx = (y * width + x) * 3;
+                
+                // Pega o label do pixel atual
+                int spCurrent = (y / bs) * gridW + (x / bs);
+                if (spCurrent >= numSPs) spCurrent = numSPs - 1;
+                int lblCurrent = labels[spCurrent];
+
+                bool isBorder = false;
+
+                // Verifica vizinho da Direita e de Baixo para detectar troca de label
+                // (Isso desenha a borda de forma eficiente sem checar 4 vizinhos)
+                int checkX[] = {1, 0};
+                int checkY[] = {0, 1};
+
+                for(int k=0; k<2; ++k) {
+                    int nx = x + checkX[k];
+                    int ny = y + checkY[k];
+
+                    if(nx < width && ny < height) {
+                        int spNeighbor = (ny / bs) * gridW + (nx / bs);
+                        if (spNeighbor < numSPs) {
+                            if (labels[spNeighbor] != lblCurrent) {
+                                isBorder = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                if (isBorder) {
+                    // Pinta Borda de MAGENTA NEON (Restaque alto)
+                    output[idx]   = 255;
+                    output[idx+1] = 0;
+                    output[idx+2] = 255;
+                } else {
+                    // Fundo: Imagem Original levemente escurecida para contraste
+                    // Se quiser ver o segmento sólido, troque imgData pela cor média
+                    output[idx]   = (unsigned char)(imgData[idx] * 0.7);
+                    output[idx+1] = (unsigned char)(imgData[idx+1] * 0.7);
+                    output[idx+2] = (unsigned char)(imgData[idx+2] * 0.7);
+                }
+            }
+        }
+
+        stbi_write_png(filename.c_str(), width, height, 3, output.data(), width * 3);
+        std::cout << "Debug de bordas salvo em: " << filename << std::endl;
     }
 
 private:
